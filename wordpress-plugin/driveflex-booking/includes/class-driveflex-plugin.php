@@ -55,16 +55,19 @@ final class DriveFlex_Plugin {
 		add_action( 'admin_menu', array( $this, 'admin_menu' ) );
 		add_action( 'admin_post_driveflex_update_booking', array( $this, 'update_booking' ) );
 		add_action( 'admin_post_driveflex_import_fleet', array( $this, 'import_starter_fleet' ) );
+		add_action( 'admin_post_driveflex_import_existing', array( $this, 'import_existing_fleet' ) );
+		add_action( 'admin_post_driveflex_import_csv', array( $this, 'import_csv_fleet' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_shortcode( 'driveflex_fleet', array( $this, 'fleet_shortcode' ) );
 	}
 
 	public function register_vehicle_type(): void {
+		$company = $this->company_name();
 		register_post_type(
 			'driveflex_vehicle',
 			array(
 				'labels' => array(
-					'name' => __( 'DriveFlex Vehicles', 'driveflex-booking' ),
+					'name' => sprintf( __( '%s Vehicles', 'driveflex-booking' ), $company ),
 					'singular_name' => __( 'Vehicle', 'driveflex-booking' ),
 					'add_new_item' => __( 'Add Vehicle', 'driveflex-booking' ),
 					'edit_item' => __( 'Edit Vehicle', 'driveflex-booking' ),
@@ -96,7 +99,7 @@ final class DriveFlex_Plugin {
 	public function vehicle_meta_box( WP_Post $post ): void {
 		wp_nonce_field( 'driveflex_save_vehicle', 'driveflex_vehicle_nonce' );
 		$fields = array(
-			'rate' => array( 'Daily rate (KSh)', 'number', '0' ),
+			'rate' => array( 'Daily rate (' . $this->currency() . ')', 'number', '0' ),
 			'seats' => array( 'Seats', 'number', '5' ),
 			'luggage' => array( 'Luggage', 'number', '2' ),
 			'doors' => array( 'Doors', 'number', '5' ),
@@ -234,7 +237,7 @@ final class DriveFlex_Plugin {
 			return new WP_Error( 'missing_details', __( 'Complete all required details and accept the rental terms.', 'driveflex-booking' ), array( 'status' => 400 ) );
 		}
 		if ( $this->has_overlap( $trip['vehicle']['id'], $trip['pickup'], $trip['dropoff'] ) ) {
-			return new WP_Error( 'dates_unavailable', __( 'These dates are no longer available. Choose different dates or contact DriveFlex.', 'driveflex-booking' ), array( 'status' => 409 ) );
+			return new WP_Error( 'dates_unavailable', sprintf( __( 'These dates are no longer available. Choose different dates or contact %s.', 'driveflex-booking' ), $this->company_name() ), array( 'status' => 409 ) );
 		}
 		if ( ! $this->rate_limit() ) {
 			return new WP_Error( 'rate_limited', __( 'Please wait before sending another request.', 'driveflex-booking' ), array( 'status' => 429 ) );
@@ -261,7 +264,7 @@ final class DriveFlex_Plugin {
 		$message = $this->booking_message( $reference, $trip, compact( 'name', 'phone', 'email', 'notes', 'pickup_location', 'dropoff_location' ) );
 		$whatsapp = preg_replace( '/\D+/', '', (string) get_option( 'driveflex_whatsapp', '' ) );
 		$url = 'https://wa.me/' . $whatsapp . '?text=' . rawurlencode( $message );
-		return new WP_REST_Response( array( 'reference' => $reference, 'status' => 'requested', 'whatsapp_url' => $url, 'message' => __( 'Your request has been received. DriveFlex will confirm availability.', 'driveflex-booking' ) ), 201 );
+		return new WP_REST_Response( array( 'reference' => $reference, 'status' => 'requested', 'whatsapp_url' => $url, 'message' => sprintf( __( 'Your request has been received. %s will confirm availability.', 'driveflex-booking' ), $this->company_name() ) ), 201 );
 	}
 
 	private function rate_limit(): bool {
@@ -276,19 +279,21 @@ final class DriveFlex_Plugin {
 	}
 
 	private function booking_message( string $reference, array $trip, array $customer ): string {
+		$company = $this->company_name();
+		$currency = $this->currency();
 		return sprintf(
-			"DriveFlex Rentals booking request\nReference: %s\nVehicle: %s\nRental: %d days at KSh %s per day\nPick-up: %s — %s\nDrop-off: %s — %s\nEstimated total: KSh %s\nCustomer: %s\nPhone: %s\nEmail: %s\nRequest details: %s",
-			$reference, $trip['vehicle']['name'], $trip['days'], number_format_i18n( $trip['vehicle']['rate'] ),
+			"%s booking request\nReference: %s\nVehicle: %s\nRental: %d days at %s %s per day\nPick-up: %s — %s\nDrop-off: %s — %s\nEstimated total: %s %s\nCustomer: %s\nPhone: %s\nEmail: %s\nRequest details: %s",
+			$company, $reference, $trip['vehicle']['name'], $trip['days'], $currency, number_format_i18n( $trip['vehicle']['rate'] ),
 			$trip['pickup']->format( 'Y-m-d H:i' ), $customer['pickup_location'], $trip['dropoff']->format( 'Y-m-d H:i' ),
-			$customer['dropoff_location'], number_format_i18n( $trip['total'] ), $customer['name'], $customer['phone'], $customer['email'], $customer['notes']
+			$customer['dropoff_location'], $currency, number_format_i18n( $trip['total'] ), $customer['name'], $customer['phone'], $customer['email'], $customer['notes']
 		);
 	}
 
 	private function send_notifications( string $reference, array $trip, array $customer ): void {
 		$message = $this->booking_message( $reference, $trip, $customer );
 		$admin_email = sanitize_email( (string) get_option( 'driveflex_booking_email', get_option( 'admin_email' ) ) );
-		wp_mail( $admin_email, 'DriveFlex request ' . $reference, $message );
-		wp_mail( $customer['email'], 'We received your DriveFlex request ' . $reference, "Thank you, {$customer['name']}.\n\nWe received your request and will confirm vehicle availability before payment.\n\n" . $message );
+		wp_mail( $admin_email, $this->company_name() . ' request ' . $reference, $message );
+		wp_mail( $customer['email'], 'We received your ' . $this->company_name() . ' request ' . $reference, "Thank you, {$customer['name']}.\n\nWe received your request and will confirm vehicle availability before payment.\n\n" . $message );
 	}
 
 	public function fleet_shortcode(): string {
@@ -296,16 +301,18 @@ final class DriveFlex_Plugin {
 		wp_enqueue_script( 'driveflex-booking', DRIVEFLEX_URL . 'assets/driveflex-booking.js', array(), DRIVEFLEX_VERSION, true );
 		wp_localize_script( 'driveflex-booking', 'DriveFlexBooking', array(
 			'api' => esc_url_raw( rest_url( 'driveflex/v1' ) ),
-			'locations' => array( 'Nairobi City Centre', 'Jomo Kenyatta Airport', 'Wilson Airport', 'Mombasa' ),
-			'currency' => 'KSh',
+			'locations' => $this->locations(),
+			'currency' => $this->currency(),
+			'company' => $this->company_name(),
 			'today' => current_datetime()->format( 'Y-m-d' ),
 		) );
-		return '<div id="driveflex-booking-app" class="driveflex-app"><p class="driveflex-loading">Loading the DriveFlex fleet…</p></div>';
+		return '<div id="driveflex-booking-app" class="driveflex-app"><p class="driveflex-loading">' . esc_html( sprintf( __( 'Loading the %s fleet…', 'driveflex-booking' ), $this->company_name() ) ) . '</p></div>';
 	}
 
 	public function admin_menu(): void {
 		add_submenu_page( 'edit.php?post_type=driveflex_vehicle', 'Bookings', 'Bookings', 'manage_options', 'driveflex-bookings', array( $this, 'bookings_page' ) );
 		add_submenu_page( 'edit.php?post_type=driveflex_vehicle', 'Settings', 'Settings', 'manage_options', 'driveflex-settings', array( $this, 'settings_page' ) );
+		add_submenu_page( 'edit.php?post_type=driveflex_vehicle', 'Import Fleet', 'Import Fleet', 'manage_options', 'driveflex-import', array( $this, 'import_page' ) );
 	}
 
 	public function bookings_page(): void {
@@ -314,14 +321,14 @@ final class DriveFlex_Plugin {
 		}
 		global $wpdb;
 		$rows = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}driveflex_bookings ORDER BY created_at DESC LIMIT 250" );
-		echo '<div class="wrap"><h1>DriveFlex Bookings</h1>';
+		echo '<div class="wrap"><h1>' . esc_html( $this->company_name() ) . ' Bookings</h1>';
 		if ( isset( $_GET['driveflex_error'] ) && 'overlap' === sanitize_key( wp_unslash( $_GET['driveflex_error'] ) ) ) {
 			echo '<div class="notice notice-error"><p>This request overlaps a booking already marked Available, Awaiting Payment or Confirmed. Resolve the existing booking before holding these dates.</p></div>';
 		}
 		echo '<table class="widefat striped"><thead><tr><th>Reference</th><th>Customer</th><th>Vehicle</th><th>Trip</th><th>Total</th><th>Status</th><th>Update</th></tr></thead><tbody>';
 		foreach ( $rows as $row ) {
 			$action = admin_url( 'admin-post.php' );
-			echo '<tr><td><strong>' . esc_html( $row->reference ) . '</strong><br><small>' . esc_html( $row->created_at ) . '</small></td><td>' . esc_html( $row->customer_name ) . '<br><a href="mailto:' . esc_attr( $row->email ) . '">' . esc_html( $row->email ) . '</a><br>' . esc_html( $row->phone ) . '</td><td>' . esc_html( get_the_title( $row->vehicle_id ) ) . '</td><td>' . esc_html( $row->pickup_at ) . '<br>to ' . esc_html( $row->dropoff_at ) . '</td><td>KSh ' . esc_html( number_format_i18n( $row->estimated_total ) ) . '</td><td>' . esc_html( ucwords( str_replace( '_', ' ', $row->status ) ) ) . '</td><td><form method="post" action="' . esc_url( $action ) . '"><input type="hidden" name="action" value="driveflex_update_booking"><input type="hidden" name="booking_id" value="' . absint( $row->id ) . '">';
+			echo '<tr><td><strong>' . esc_html( $row->reference ) . '</strong><br><small>' . esc_html( $row->created_at ) . '</small></td><td>' . esc_html( $row->customer_name ) . '<br><a href="mailto:' . esc_attr( $row->email ) . '">' . esc_html( $row->email ) . '</a><br>' . esc_html( $row->phone ) . '</td><td>' . esc_html( get_the_title( $row->vehicle_id ) ) . '</td><td>' . esc_html( $row->pickup_at ) . '<br>to ' . esc_html( $row->dropoff_at ) . '</td><td>' . esc_html( $this->currency() . ' ' . number_format_i18n( $row->estimated_total ) ) . '</td><td>' . esc_html( ucwords( str_replace( '_', ' ', $row->status ) ) ) . '</td><td><form method="post" action="' . esc_url( $action ) . '"><input type="hidden" name="action" value="driveflex_update_booking"><input type="hidden" name="booking_id" value="' . absint( $row->id ) . '">';
 			wp_nonce_field( 'driveflex_update_booking_' . $row->id );
 			echo '<select name="status">';
 			foreach ( array( 'requested', 'available', 'unavailable', 'awaiting_payment', 'confirmed', 'completed', 'cancelled' ) as $status ) {
@@ -359,6 +366,9 @@ final class DriveFlex_Plugin {
 	public function register_settings(): void {
 		register_setting( 'driveflex_settings', 'driveflex_whatsapp', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'driveflex_settings', 'driveflex_booking_email', array( 'sanitize_callback' => 'sanitize_email' ) );
+		register_setting( 'driveflex_settings', 'driveflex_company_name', array( 'sanitize_callback' => 'sanitize_text_field', 'default' => 'DriveFlex Rentals' ) );
+		register_setting( 'driveflex_settings', 'driveflex_currency', array( 'sanitize_callback' => 'sanitize_text_field', 'default' => 'KSh' ) );
+		register_setting( 'driveflex_settings', 'driveflex_locations', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
 	}
 
 	public function settings_page(): void {
@@ -367,12 +377,172 @@ final class DriveFlex_Plugin {
 		}
 		echo '<div class="wrap"><h1>DriveFlex Settings</h1><form method="post" action="options.php">';
 		settings_fields( 'driveflex_settings' );
-		echo '<table class="form-table"><tr><th><label for="driveflex_whatsapp">WhatsApp number</label></th><td><input class="regular-text" id="driveflex_whatsapp" name="driveflex_whatsapp" value="' . esc_attr( get_option( 'driveflex_whatsapp', '' ) ) . '"><p class="description">International format, for example 254700000000.</p></td></tr><tr><th><label for="driveflex_booking_email">Booking email</label></th><td><input class="regular-text" type="email" id="driveflex_booking_email" name="driveflex_booking_email" value="' . esc_attr( get_option( 'driveflex_booking_email', get_option( 'admin_email' ) ) ) . '"></td></tr></table>';
+		echo '<table class="form-table"><tr><th><label for="driveflex_company_name">Company name</label></th><td><input class="regular-text" id="driveflex_company_name" name="driveflex_company_name" value="' . esc_attr( $this->company_name() ) . '"></td></tr><tr><th><label for="driveflex_currency">Currency label</label></th><td><input class="regular-text" id="driveflex_currency" name="driveflex_currency" value="' . esc_attr( $this->currency() ) . '"><p class="description">Examples: KSh, USD, £.</p></td></tr><tr><th><label for="driveflex_locations">Rental locations</label></th><td><textarea class="large-text" rows="5" id="driveflex_locations" name="driveflex_locations">' . esc_textarea( implode( "\n", $this->locations() ) ) . '</textarea><p class="description">One location per line.</p></td></tr><tr><th><label for="driveflex_whatsapp">WhatsApp number</label></th><td><input class="regular-text" id="driveflex_whatsapp" name="driveflex_whatsapp" value="' . esc_attr( get_option( 'driveflex_whatsapp', '' ) ) . '"><p class="description">International format, for example 254700000000.</p></td></tr><tr><th><label for="driveflex_booking_email">Booking email</label></th><td><input class="regular-text" type="email" id="driveflex_booking_email" name="driveflex_booking_email" value="' . esc_attr( get_option( 'driveflex_booking_email', get_option( 'admin_email' ) ) ) . '"></td></tr></table>';
 		submit_button();
-		echo '</form><hr><h2>Starter fleet</h2><p>Import the 19 DriveFlex vehicles, categories, rates, specifications and optimized vehicle images used on the current website. Existing vehicles with the same slug are updated instead of duplicated.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="driveflex_import_fleet">';
+		echo '</form><hr><h2>DriveFlex starter fleet</h2><p>Import the 19 DriveFlex vehicles, categories, rates, specifications and optimized vehicle images. Other companies can skip this and use Import Fleet.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="driveflex_import_fleet">';
 		wp_nonce_field( 'driveflex_import_fleet' );
 		submit_button( 'Import or update starter fleet', 'secondary', 'submit', false );
 		echo '</form></div>';
+	}
+
+	private function company_name(): string {
+		return sanitize_text_field( (string) get_option( 'driveflex_company_name', 'DriveFlex Rentals' ) ) ?: 'Car Hire';
+	}
+
+	private function currency(): string {
+		return sanitize_text_field( (string) get_option( 'driveflex_currency', 'KSh' ) ) ?: 'KSh';
+	}
+
+	private function locations(): array {
+		$defaults = "Nairobi City Centre\nJomo Kenyatta Airport\nWilson Airport\nMombasa";
+		$lines = preg_split( '/\R+/', (string) get_option( 'driveflex_locations', $defaults ) );
+		$lines = array_values( array_unique( array_filter( array_map( 'sanitize_text_field', $lines ) ) ) );
+		return $lines ?: array( 'Main Office' );
+	}
+
+	public function import_page(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		$post_types = get_post_types( array( 'show_ui' => true ), 'objects' );
+		unset( $post_types['attachment'], $post_types['driveflex_vehicle'] );
+		$notice = isset( $_GET['driveflex_imported'] ) ? absint( $_GET['driveflex_imported'] ) : 0;
+		echo '<div class="wrap"><h1>Import an existing fleet</h1>';
+		if ( $notice ) {
+			echo '<div class="notice notice-success"><p>' . esc_html( sprintf( '%d fleet records were imported or updated.', $notice ) ) . '</p></div>';
+		}
+		echo '<p>The importer copies existing WordPress fleet records into the booking plugin. Choose the post type used by the current site and enter its existing custom-field keys. WooCommerce normally uses <code>product</code> with <code>_price</code>.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="driveflex_import_existing">';
+		wp_nonce_field( 'driveflex_import_existing' );
+		echo '<table class="form-table"><tr><th><label for="source_post_type">Existing fleet post type</label></th><td><select id="source_post_type" name="source_post_type" required><option value="">Select</option>';
+		foreach ( $post_types as $post_type ) {
+			echo '<option value="' . esc_attr( $post_type->name ) . '">' . esc_html( $post_type->labels->name . ' (' . $post_type->name . ')' ) . '</option>';
+		}
+		echo '</select></td></tr>';
+		$fields = array( 'rate_key' => 'Daily-rate field', 'seats_key' => 'Seats field', 'luggage_key' => 'Luggage field', 'doors_key' => 'Doors field', 'transmission_key' => 'Transmission field', 'category_taxonomy' => 'Category taxonomy' );
+		foreach ( $fields as $name => $label ) {
+			$default = 'rate_key' === $name ? '_price' : '';
+			echo '<tr><th><label for="' . esc_attr( $name ) . '">' . esc_html( $label ) . '</label></th><td><input class="regular-text" id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $default ) . '"></td></tr>';
+		}
+		echo '</table>';
+		submit_button( 'Detect and import fleet' );
+		echo '</form><hr><h2>Import from CSV</h2><p>Use columns: <code>name, category, rate, seats, luggage, doors, transmission, image_url</code>. Only name and rate are required.</p><form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="driveflex_import_csv">';
+		wp_nonce_field( 'driveflex_import_csv' );
+		echo '<input type="file" name="fleet_csv" accept=".csv,text/csv" required>';
+		submit_button( 'Import CSV' );
+		echo '</form></div>';
+	}
+
+	public function import_existing_fleet(): void {
+		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'driveflex_import_existing' ) ) {
+			wp_die( esc_html__( 'You cannot import this fleet.', 'driveflex-booking' ) );
+		}
+		$post_type = isset( $_POST['source_post_type'] ) ? sanitize_key( $_POST['source_post_type'] ) : '';
+		if ( ! $post_type || ! post_type_exists( $post_type ) || 'driveflex_vehicle' === $post_type ) {
+			wp_die( esc_html__( 'Choose a valid existing post type.', 'driveflex-booking' ) );
+		}
+		$keys = array();
+		foreach ( array( 'rate_key', 'seats_key', 'luggage_key', 'doors_key', 'transmission_key', 'category_taxonomy' ) as $key ) {
+			$keys[ $key ] = isset( $_POST[ $key ] ) ? sanitize_key( $_POST[ $key ] ) : '';
+		}
+		if ( 'product' === $post_type && ! $keys['category_taxonomy'] && taxonomy_exists( 'product_cat' ) ) {
+			$keys['category_taxonomy'] = 'product_cat';
+		}
+		$sources = get_posts( array( 'post_type' => $post_type, 'post_status' => 'publish', 'numberposts' => -1 ) );
+		$count = 0;
+		foreach ( $sources as $source ) {
+			$category = 'Vehicle';
+			if ( $keys['category_taxonomy'] && taxonomy_exists( $keys['category_taxonomy'] ) ) {
+				$terms = wp_get_post_terms( $source->ID, $keys['category_taxonomy'], array( 'fields' => 'names' ) );
+				$category = ! is_wp_error( $terms ) && $terms ? $terms[0] : $category;
+			}
+			$record = array(
+				'slug' => $source->post_name,
+				'name' => $source->post_title,
+				'content' => $source->post_content,
+				'category' => $category,
+				'rate' => $this->source_meta_number( $source->ID, $keys['rate_key'], 0 ),
+				'seats' => $this->source_meta_number( $source->ID, $keys['seats_key'], 5 ),
+				'luggage' => $this->source_meta_number( $source->ID, $keys['luggage_key'], 2 ),
+				'doors' => $this->source_meta_number( $source->ID, $keys['doors_key'], 5 ),
+				'transmission' => $keys['transmission_key'] ? sanitize_text_field( (string) get_post_meta( $source->ID, $keys['transmission_key'], true ) ) : 'Automatic',
+				'image_id' => get_post_thumbnail_id( $source->ID ),
+			);
+			if ( $record['name'] && $record['rate'] > 0 && $this->upsert_imported_vehicle( $record ) ) {
+				$count++;
+			}
+		}
+		$this->redirect_import( $count );
+	}
+
+	private function source_meta_number( int $post_id, string $key, int $fallback ): int {
+		return $key ? absint( get_post_meta( $post_id, $key, true ) ) : $fallback;
+	}
+
+	public function import_csv_fleet(): void {
+		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'driveflex_import_csv' ) ) {
+			wp_die( esc_html__( 'You cannot import this fleet.', 'driveflex-booking' ) );
+		}
+		$file = isset( $_FILES['fleet_csv']['tmp_name'] ) ? (string) $_FILES['fleet_csv']['tmp_name'] : '';
+		if ( ! $file || ! is_uploaded_file( $file ) ) {
+			wp_die( esc_html__( 'Upload a valid CSV file.', 'driveflex-booking' ) );
+		}
+		$handle = fopen( $file, 'r' );
+		$headers = $handle ? fgetcsv( $handle ) : false;
+		$headers = is_array( $headers ) ? array_map( static fn( $value ) => sanitize_key( trim( (string) $value ) ), $headers ) : array();
+		$count = 0;
+		while ( $handle && ( $values = fgetcsv( $handle ) ) !== false ) {
+			$values = array_pad( $values, count( $headers ), '' );
+			$row = array_combine( $headers, array_slice( $values, 0, count( $headers ) ) );
+			if ( ! is_array( $row ) || empty( $row['name'] ) || empty( $row['rate'] ) ) {
+				continue;
+			}
+			$record = array(
+				'slug' => sanitize_title( $row['name'] ), 'name' => sanitize_text_field( $row['name'] ), 'content' => '',
+				'category' => sanitize_text_field( $row['category'] ?? 'Vehicle' ), 'rate' => absint( $row['rate'] ),
+				'seats' => absint( $row['seats'] ?? 5 ), 'luggage' => absint( $row['luggage'] ?? 2 ), 'doors' => absint( $row['doors'] ?? 5 ),
+				'transmission' => sanitize_text_field( $row['transmission'] ?? 'Automatic' ), 'image_url' => esc_url_raw( $row['image_url'] ?? '' ),
+			);
+			if ( $this->upsert_imported_vehicle( $record ) ) {
+				$count++;
+			}
+		}
+		if ( $handle ) {
+			fclose( $handle );
+		}
+		$this->redirect_import( $count );
+	}
+
+	private function upsert_imported_vehicle( array $record ): int {
+		$existing = get_page_by_path( $record['slug'], OBJECT, 'driveflex_vehicle' );
+		$post_id = wp_insert_post( array( 'ID' => $existing ? $existing->ID : 0, 'post_type' => 'driveflex_vehicle', 'post_status' => 'publish', 'post_name' => $record['slug'], 'post_title' => $record['name'], 'post_content' => $record['content'] ?? '' ), true );
+		if ( is_wp_error( $post_id ) ) {
+			return 0;
+		}
+		wp_set_object_terms( $post_id, $record['category'] ?: 'Vehicle', 'driveflex_category' );
+		foreach ( array( 'rate', 'seats', 'luggage', 'doors' ) as $key ) {
+			update_post_meta( $post_id, '_driveflex_' . $key, absint( $record[ $key ] ) );
+		}
+		update_post_meta( $post_id, '_driveflex_transmission', $record['transmission'] ?: 'Automatic' );
+		update_post_meta( $post_id, '_driveflex_minimum_days', 3 );
+		update_post_meta( $post_id, '_driveflex_active', 1 );
+		if ( ! has_post_thumbnail( $post_id ) && ! empty( $record['image_id'] ) ) {
+			set_post_thumbnail( $post_id, absint( $record['image_id'] ) );
+		}
+		if ( ! has_post_thumbnail( $post_id ) && ! empty( $record['image_url'] ) ) {
+			require_once ABSPATH . 'wp-admin/includes/media.php';
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+			$attachment_id = media_sideload_image( $record['image_url'], $post_id, $record['name'], 'id' );
+			if ( ! is_wp_error( $attachment_id ) ) {
+				set_post_thumbnail( $post_id, $attachment_id );
+			}
+		}
+		return $post_id;
+	}
+
+	private function redirect_import( int $count ): void {
+		wp_safe_redirect( admin_url( 'edit.php?post_type=driveflex_vehicle&page=driveflex-import&driveflex_imported=' . $count ) );
+		exit;
 	}
 
 	public function import_starter_fleet(): void {

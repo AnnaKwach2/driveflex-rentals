@@ -32,7 +32,7 @@
 
   function renderFleet() {
     const categories = ['All', ...new Set(state.vehicles.map(vehicle => vehicle.category))];
-    root.innerHTML = `<section class="df-shell"><div class="df-heading"><div><small>OUR COLLECTION</small><h2>Choose your DriveFlex vehicle</h2></div><label>Category<select id="df-category">${categories.map(category => `<option>${esc(category)}</option>`).join('')}</select></label></div><p class="df-status" id="df-status" aria-live="polite"></p><div class="df-grid" id="df-grid"></div></section><dialog class="df-dialog" id="df-dialog"><button class="df-close" aria-label="Close">×</button><div id="df-dialog-content"></div></dialog>`;
+    root.innerHTML = `<section class="df-shell"><div class="df-heading"><div><small>OUR COLLECTION</small><h2>Choose your ${esc(DriveFlexBooking.company)} vehicle</h2></div><label>Category<select id="df-category">${categories.map(category => `<option>${esc(category)}</option>`).join('')}</select></label></div><p class="df-status" id="df-status" aria-live="polite"></p><div class="df-grid" id="df-grid"></div></section><dialog class="df-dialog" id="df-dialog"><button class="df-close" aria-label="Close">×</button><div id="df-dialog-content"></div></dialog>`;
     const grid = document.getElementById('df-grid');
     const draw = category => {
       const vehicles = state.vehicles.filter(vehicle => category === 'All' || vehicle.category === category);
@@ -91,7 +91,7 @@
       <label>Email address<input name="email" type="email" autocomplete="email" required></label><label class="df-wide">Trip details / request notes<textarea name="notes" rows="4" required></textarea></label></div>
       <label class="df-consent"><input name="terms" type="checkbox" value="1" required> I confirm these trip details and agree to the rental terms.</label>
       <p class="df-error" id="df-error" role="alert"></p><div class="df-actions"><button class="df-outline" id="df-back" type="button">← Back</button><button class="df-button" type="submit">Send booking request →</button></div>
-      <p class="df-note">ID/passport and payment are requested only after DriveFlex confirms vehicle availability.</p></form></div>`);
+      <p class="df-note">ID/passport and payment are requested only after ${esc(DriveFlexBooking.company)} confirms vehicle availability.</p></form></div>`);
     document.getElementById('df-back').onclick = () => tripStep(state.vehicle);
     document.getElementById('df-booking-form').addEventListener('submit', submitBooking);
   }
@@ -103,7 +103,7 @@
     button.disabled = true;
     try {
       const result = await api('/bookings', { method: 'POST', body: JSON.stringify({ ...state.trip, ...fields, vehicle_id: state.vehicle.id, terms: true }) });
-      openDialog(`<div class="df-confirmation"><span>✓</span><small>REQUEST RECEIVED</small><h2>Thank you</h2><p>Your reference is <strong>${esc(result.reference)}</strong>. DriveFlex will contact you after checking availability.</p><div class="df-estimate"><strong>${esc(state.vehicle.name)} · ${state.estimate.days} days</strong><b>${money(state.estimate.total)}</b></div>${result.whatsapp_url ? `<a class="df-button" href="${esc(result.whatsapp_url)}" target="_blank" rel="noopener">Continue on WhatsApp →</a>` : ''}</div>`);
+      openDialog(`<div class="df-confirmation"><span>✓</span><small>REQUEST RECEIVED</small><h2>Thank you</h2><p>Your reference is <strong>${esc(result.reference)}</strong>. ${esc(DriveFlexBooking.company)} will contact you after checking availability.</p><div class="df-estimate"><strong>${esc(state.vehicle.name)} · ${state.estimate.days} days</strong><b>${money(state.estimate.total)}</b></div>${result.whatsapp_url ? `<a class="df-button" href="${esc(result.whatsapp_url)}" target="_blank" rel="noopener">Continue on WhatsApp →</a>` : ''}</div>`);
     } catch (err) {
       document.getElementById('df-error').textContent = err.message;
       button.disabled = false;
