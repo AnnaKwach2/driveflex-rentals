@@ -1,19 +1,20 @@
-=== DesignPhox Car Hire Fleet & Booking ===
+=== DesignPhox DriveFlex Theme Fleet & Booking ===
 Contributors: designphox
 Tags: car rental, fleet, booking, kenya
 Requires at least: 6.4
 Requires PHP: 8.1
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 
-Reusable car-hire fleet management, fleet migration, rental estimates, availability and booking requests.
+Fleet management, rental estimates, availability and booking requests for websites built with the DriveFlex car-hire theme.
 
 == Installation ==
 
 1. Upload and activate the plugin.
-2. Open DriveFlex Vehicles > Settings and add the company name, currency, locations, booking email and WhatsApp number.
-3. Open Import Fleet to migrate an existing WordPress/WooCommerce fleet or upload a CSV. DriveFlex can instead use its bundled starter fleet.
+2. Open DriveFlex Vehicles > Settings and add the client's company name, currency, locations, booking email and WhatsApp number.
+3. Select Import or update starter fleet to create the theme's complete base fleet.
 4. Add the shortcode [driveflex_fleet] to the fleet page.
+5. Edit, add or remove vehicles under the client's Vehicles menu. The theme and booking system read this same fleet automatically.
 
 == Booking workflow ==
 
@@ -27,8 +28,6 @@ Booking requests contain customer contact and trip information. Use HTTPS, restr
 
 Version 1.0 manages booking requests and availability confirmation. M-Pesa/card checkout and secure ID upload should be added only after the deposit rules, payment provider account, document retention period and privacy notice are confirmed.
 
-== Fleet migration ==
+== Theme integration ==
 
-The importer discovers post types registered by the current WordPress website. Select the post type holding the current fleet and map its price/specification custom fields once. The plugin copies the titles, descriptions, featured images and mapped specifications without requiring each vehicle to be recreated. WooCommerce uses the product post type and normally stores its price in _price.
-
-For fleets outside WordPress, upload a CSV with name, category, rate, seats, luggage, doors, transmission and image_url columns. Name and rate are required.
+The plugin is the single source of fleet data for the DriveFlex theme. The theme does not maintain a separate hard-coded vehicle list. New client sites can begin with the bundled fleet, then customize vehicles, images, categories, prices and specifications in WordPress. The shortcode and booking flow update automatically from those records.

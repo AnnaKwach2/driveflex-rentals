@@ -55,8 +55,6 @@ final class DriveFlex_Plugin {
 		add_action( 'admin_menu', array( $this, 'admin_menu' ) );
 		add_action( 'admin_post_driveflex_update_booking', array( $this, 'update_booking' ) );
 		add_action( 'admin_post_driveflex_import_fleet', array( $this, 'import_starter_fleet' ) );
-		add_action( 'admin_post_driveflex_import_existing', array( $this, 'import_existing_fleet' ) );
-		add_action( 'admin_post_driveflex_import_csv', array( $this, 'import_csv_fleet' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_shortcode( 'driveflex_fleet', array( $this, 'fleet_shortcode' ) );
 	}
@@ -312,7 +310,6 @@ final class DriveFlex_Plugin {
 	public function admin_menu(): void {
 		add_submenu_page( 'edit.php?post_type=driveflex_vehicle', 'Bookings', 'Bookings', 'manage_options', 'driveflex-bookings', array( $this, 'bookings_page' ) );
 		add_submenu_page( 'edit.php?post_type=driveflex_vehicle', 'Settings', 'Settings', 'manage_options', 'driveflex-settings', array( $this, 'settings_page' ) );
-		add_submenu_page( 'edit.php?post_type=driveflex_vehicle', 'Import Fleet', 'Import Fleet', 'manage_options', 'driveflex-import', array( $this, 'import_page' ) );
 	}
 
 	public function bookings_page(): void {
@@ -379,7 +376,7 @@ final class DriveFlex_Plugin {
 		settings_fields( 'driveflex_settings' );
 		echo '<table class="form-table"><tr><th><label for="driveflex_company_name">Company name</label></th><td><input class="regular-text" id="driveflex_company_name" name="driveflex_company_name" value="' . esc_attr( $this->company_name() ) . '"></td></tr><tr><th><label for="driveflex_currency">Currency label</label></th><td><input class="regular-text" id="driveflex_currency" name="driveflex_currency" value="' . esc_attr( $this->currency() ) . '"><p class="description">Examples: KSh, USD, £.</p></td></tr><tr><th><label for="driveflex_locations">Rental locations</label></th><td><textarea class="large-text" rows="5" id="driveflex_locations" name="driveflex_locations">' . esc_textarea( implode( "\n", $this->locations() ) ) . '</textarea><p class="description">One location per line.</p></td></tr><tr><th><label for="driveflex_whatsapp">WhatsApp number</label></th><td><input class="regular-text" id="driveflex_whatsapp" name="driveflex_whatsapp" value="' . esc_attr( get_option( 'driveflex_whatsapp', '' ) ) . '"><p class="description">International format, for example 254700000000.</p></td></tr><tr><th><label for="driveflex_booking_email">Booking email</label></th><td><input class="regular-text" type="email" id="driveflex_booking_email" name="driveflex_booking_email" value="' . esc_attr( get_option( 'driveflex_booking_email', get_option( 'admin_email' ) ) ) . '"></td></tr></table>';
 		submit_button();
-		echo '</form><hr><h2>DriveFlex starter fleet</h2><p>Import the 19 DriveFlex vehicles, categories, rates, specifications and optimized vehicle images. Other companies can skip this and use Import Fleet.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="driveflex_import_fleet">';
+		echo '</form><hr><h2>DriveFlex starter fleet</h2><p>Load the complete 19-vehicle base fleet for a new DriveFlex-theme website. You can then edit, add or remove vehicles for the client.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="driveflex_import_fleet">';
 		wp_nonce_field( 'driveflex_import_fleet' );
 		submit_button( 'Import or update starter fleet', 'secondary', 'submit', false );
 		echo '</form></div>';
@@ -398,151 +395,6 @@ final class DriveFlex_Plugin {
 		$lines = preg_split( '/\R+/', (string) get_option( 'driveflex_locations', $defaults ) );
 		$lines = array_values( array_unique( array_filter( array_map( 'sanitize_text_field', $lines ) ) ) );
 		return $lines ?: array( 'Main Office' );
-	}
-
-	public function import_page(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-		$post_types = get_post_types( array( 'show_ui' => true ), 'objects' );
-		unset( $post_types['attachment'], $post_types['driveflex_vehicle'] );
-		$notice = isset( $_GET['driveflex_imported'] ) ? absint( $_GET['driveflex_imported'] ) : 0;
-		echo '<div class="wrap"><h1>Import an existing fleet</h1>';
-		if ( $notice ) {
-			echo '<div class="notice notice-success"><p>' . esc_html( sprintf( '%d fleet records were imported or updated.', $notice ) ) . '</p></div>';
-		}
-		echo '<p>The importer copies existing WordPress fleet records into the booking plugin. Choose the post type used by the current site and enter its existing custom-field keys. WooCommerce normally uses <code>product</code> with <code>_price</code>.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="driveflex_import_existing">';
-		wp_nonce_field( 'driveflex_import_existing' );
-		echo '<table class="form-table"><tr><th><label for="source_post_type">Existing fleet post type</label></th><td><select id="source_post_type" name="source_post_type" required><option value="">Select</option>';
-		foreach ( $post_types as $post_type ) {
-			echo '<option value="' . esc_attr( $post_type->name ) . '">' . esc_html( $post_type->labels->name . ' (' . $post_type->name . ')' ) . '</option>';
-		}
-		echo '</select></td></tr>';
-		$fields = array( 'rate_key' => 'Daily-rate field', 'seats_key' => 'Seats field', 'luggage_key' => 'Luggage field', 'doors_key' => 'Doors field', 'transmission_key' => 'Transmission field', 'category_taxonomy' => 'Category taxonomy' );
-		foreach ( $fields as $name => $label ) {
-			$default = 'rate_key' === $name ? '_price' : '';
-			echo '<tr><th><label for="' . esc_attr( $name ) . '">' . esc_html( $label ) . '</label></th><td><input class="regular-text" id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $default ) . '"></td></tr>';
-		}
-		echo '</table>';
-		submit_button( 'Detect and import fleet' );
-		echo '</form><hr><h2>Import from CSV</h2><p>Use columns: <code>name, category, rate, seats, luggage, doors, transmission, image_url</code>. Only name and rate are required.</p><form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="driveflex_import_csv">';
-		wp_nonce_field( 'driveflex_import_csv' );
-		echo '<input type="file" name="fleet_csv" accept=".csv,text/csv" required>';
-		submit_button( 'Import CSV' );
-		echo '</form></div>';
-	}
-
-	public function import_existing_fleet(): void {
-		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'driveflex_import_existing' ) ) {
-			wp_die( esc_html__( 'You cannot import this fleet.', 'driveflex-booking' ) );
-		}
-		$post_type = isset( $_POST['source_post_type'] ) ? sanitize_key( $_POST['source_post_type'] ) : '';
-		if ( ! $post_type || ! post_type_exists( $post_type ) || 'driveflex_vehicle' === $post_type ) {
-			wp_die( esc_html__( 'Choose a valid existing post type.', 'driveflex-booking' ) );
-		}
-		$keys = array();
-		foreach ( array( 'rate_key', 'seats_key', 'luggage_key', 'doors_key', 'transmission_key', 'category_taxonomy' ) as $key ) {
-			$keys[ $key ] = isset( $_POST[ $key ] ) ? sanitize_key( $_POST[ $key ] ) : '';
-		}
-		if ( 'product' === $post_type && ! $keys['category_taxonomy'] && taxonomy_exists( 'product_cat' ) ) {
-			$keys['category_taxonomy'] = 'product_cat';
-		}
-		$sources = get_posts( array( 'post_type' => $post_type, 'post_status' => 'publish', 'numberposts' => -1 ) );
-		$count = 0;
-		foreach ( $sources as $source ) {
-			$category = 'Vehicle';
-			if ( $keys['category_taxonomy'] && taxonomy_exists( $keys['category_taxonomy'] ) ) {
-				$terms = wp_get_post_terms( $source->ID, $keys['category_taxonomy'], array( 'fields' => 'names' ) );
-				$category = ! is_wp_error( $terms ) && $terms ? $terms[0] : $category;
-			}
-			$record = array(
-				'slug' => $source->post_name,
-				'name' => $source->post_title,
-				'content' => $source->post_content,
-				'category' => $category,
-				'rate' => $this->source_meta_number( $source->ID, $keys['rate_key'], 0 ),
-				'seats' => $this->source_meta_number( $source->ID, $keys['seats_key'], 5 ),
-				'luggage' => $this->source_meta_number( $source->ID, $keys['luggage_key'], 2 ),
-				'doors' => $this->source_meta_number( $source->ID, $keys['doors_key'], 5 ),
-				'transmission' => $keys['transmission_key'] ? sanitize_text_field( (string) get_post_meta( $source->ID, $keys['transmission_key'], true ) ) : 'Automatic',
-				'image_id' => get_post_thumbnail_id( $source->ID ),
-			);
-			if ( $record['name'] && $record['rate'] > 0 && $this->upsert_imported_vehicle( $record ) ) {
-				$count++;
-			}
-		}
-		$this->redirect_import( $count );
-	}
-
-	private function source_meta_number( int $post_id, string $key, int $fallback ): int {
-		return $key ? absint( get_post_meta( $post_id, $key, true ) ) : $fallback;
-	}
-
-	public function import_csv_fleet(): void {
-		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'driveflex_import_csv' ) ) {
-			wp_die( esc_html__( 'You cannot import this fleet.', 'driveflex-booking' ) );
-		}
-		$file = isset( $_FILES['fleet_csv']['tmp_name'] ) ? (string) $_FILES['fleet_csv']['tmp_name'] : '';
-		if ( ! $file || ! is_uploaded_file( $file ) ) {
-			wp_die( esc_html__( 'Upload a valid CSV file.', 'driveflex-booking' ) );
-		}
-		$handle = fopen( $file, 'r' );
-		$headers = $handle ? fgetcsv( $handle ) : false;
-		$headers = is_array( $headers ) ? array_map( static fn( $value ) => sanitize_key( trim( (string) $value ) ), $headers ) : array();
-		$count = 0;
-		while ( $handle && ( $values = fgetcsv( $handle ) ) !== false ) {
-			$values = array_pad( $values, count( $headers ), '' );
-			$row = array_combine( $headers, array_slice( $values, 0, count( $headers ) ) );
-			if ( ! is_array( $row ) || empty( $row['name'] ) || empty( $row['rate'] ) ) {
-				continue;
-			}
-			$record = array(
-				'slug' => sanitize_title( $row['name'] ), 'name' => sanitize_text_field( $row['name'] ), 'content' => '',
-				'category' => sanitize_text_field( $row['category'] ?? 'Vehicle' ), 'rate' => absint( $row['rate'] ),
-				'seats' => absint( $row['seats'] ?? 5 ), 'luggage' => absint( $row['luggage'] ?? 2 ), 'doors' => absint( $row['doors'] ?? 5 ),
-				'transmission' => sanitize_text_field( $row['transmission'] ?? 'Automatic' ), 'image_url' => esc_url_raw( $row['image_url'] ?? '' ),
-			);
-			if ( $this->upsert_imported_vehicle( $record ) ) {
-				$count++;
-			}
-		}
-		if ( $handle ) {
-			fclose( $handle );
-		}
-		$this->redirect_import( $count );
-	}
-
-	private function upsert_imported_vehicle( array $record ): int {
-		$existing = get_page_by_path( $record['slug'], OBJECT, 'driveflex_vehicle' );
-		$post_id = wp_insert_post( array( 'ID' => $existing ? $existing->ID : 0, 'post_type' => 'driveflex_vehicle', 'post_status' => 'publish', 'post_name' => $record['slug'], 'post_title' => $record['name'], 'post_content' => $record['content'] ?? '' ), true );
-		if ( is_wp_error( $post_id ) ) {
-			return 0;
-		}
-		wp_set_object_terms( $post_id, $record['category'] ?: 'Vehicle', 'driveflex_category' );
-		foreach ( array( 'rate', 'seats', 'luggage', 'doors' ) as $key ) {
-			update_post_meta( $post_id, '_driveflex_' . $key, absint( $record[ $key ] ) );
-		}
-		update_post_meta( $post_id, '_driveflex_transmission', $record['transmission'] ?: 'Automatic' );
-		update_post_meta( $post_id, '_driveflex_minimum_days', 3 );
-		update_post_meta( $post_id, '_driveflex_active', 1 );
-		if ( ! has_post_thumbnail( $post_id ) && ! empty( $record['image_id'] ) ) {
-			set_post_thumbnail( $post_id, absint( $record['image_id'] ) );
-		}
-		if ( ! has_post_thumbnail( $post_id ) && ! empty( $record['image_url'] ) ) {
-			require_once ABSPATH . 'wp-admin/includes/media.php';
-			require_once ABSPATH . 'wp-admin/includes/file.php';
-			require_once ABSPATH . 'wp-admin/includes/image.php';
-			$attachment_id = media_sideload_image( $record['image_url'], $post_id, $record['name'], 'id' );
-			if ( ! is_wp_error( $attachment_id ) ) {
-				set_post_thumbnail( $post_id, $attachment_id );
-			}
-		}
-		return $post_id;
-	}
-
-	private function redirect_import( int $count ): void {
-		wp_safe_redirect( admin_url( 'edit.php?post_type=driveflex_vehicle&page=driveflex-import&driveflex_imported=' . $count ) );
-		exit;
 	}
 
 	public function import_starter_fleet(): void {
