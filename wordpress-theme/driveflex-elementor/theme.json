@@ -1,0 +1,29 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/theme.json",
+  "version": 3,
+  "settings": {
+    "appearanceTools": true,
+    "layout": { "contentSize": "900px", "wideSize": "1250px" },
+    "color": {
+      "palette": [
+        { "slug": "driveflex-navy", "name": "DriveFlex Navy", "color": "#0b111e" },
+        { "slug": "driveflex-slate", "name": "DriveFlex Slate", "color": "#192633" },
+        { "slug": "driveflex-orange", "name": "DriveFlex Orange", "color": "#ff650b" },
+        { "slug": "driveflex-white", "name": "White", "color": "#ffffff" },
+        { "slug": "driveflex-muted", "name": "Muted", "color": "#727987" }
+      ]
+    },
+    "typography": {
+      "fontFamilies": [
+        { "fontFamily": "Inter, 'Segoe UI', Roboto, Arial, sans-serif", "name": "DriveFlex Sans", "slug": "driveflex-sans" }
+      ],
+      "fluid": true
+    },
+    "spacing": { "units": ["px", "rem", "%", "vw"] }
+  },
+  "styles": {
+    "color": { "background": "#ffffff", "text": "#0b111e" },
+    "typography": { "fontFamily": "var:preset|font-family|driveflex-sans", "lineHeight": "1.55" },
+    "elements": { "link": { "color": { "text": "#ff650b" } } }
+  }
+}
