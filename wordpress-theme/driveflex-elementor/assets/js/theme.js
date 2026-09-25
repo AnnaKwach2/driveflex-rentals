@@ -21,4 +21,17 @@
     const data = new FormData(search);
     location.href = `${search.action}?${new URLSearchParams(data).toString()}`;
   });
+  document.querySelector('.df-contact-form')?.addEventListener('submit', event => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const fields = Object.fromEntries(data.entries());
+    const error = event.currentTarget.querySelector('.df-form-error');
+    if (!fields.firstName || !fields.lastName || !fields.email || !fields.phone || !fields.message) {
+      error.textContent = 'Please complete all fields before continuing.';
+      return;
+    }
+    error.textContent = '';
+    const text = `Hello DriveFlex Rentals,\n\n${fields.message}\n\nName: ${fields.firstName} ${fields.lastName}\nPhone: ${fields.phone}\nEmail: ${fields.email}`;
+    window.open(`https://wa.me/254706449960?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+  });
 })();

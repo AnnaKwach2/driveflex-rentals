@@ -39,7 +39,7 @@ function driveflex_option( string $key, string $default = '' ): string {
 function driveflex_customizer( WP_Customize_Manager $customizer ): void {
 	$customizer->add_section( 'driveflex_business', array( 'title' => __( 'DriveFlex business details', 'driveflex-elementor' ), 'priority' => 30 ) );
 	$fields = array(
-		'driveflex_phone' => array( 'Phone', '+254 700 000 000' ), 'driveflex_email' => array( 'Email', 'bookings@example.com' ),
+		'driveflex_phone' => array( 'Phone', '+254 706 449960' ), 'driveflex_email' => array( 'Email', 'bookings@example.com' ),
 		'driveflex_location' => array( 'Location', 'Nairobi, Kenya' ), 'driveflex_facebook' => array( 'Facebook URL', 'https://facebook.com/' ),
 		'driveflex_instagram' => array( 'Instagram URL', 'https://instagram.com/' ), 'driveflex_linkedin' => array( 'LinkedIn URL', 'https://linkedin.com/' ),
 		'driveflex_x' => array( 'X URL', 'https://x.com/' ),
@@ -65,7 +65,7 @@ function driveflex_create_starter_pages(): void {
 	$pages = array(
 		'home' => array( 'title' => 'Home', 'content' => '' ),
 		'fleet' => array( 'title' => 'Fleet', 'content' => '<!-- wp:shortcode -->[driveflex_fleet]<!-- /wp:shortcode -->' ),
-		'contact' => array( 'title' => 'Contact', 'content' => '<!-- wp:heading --><h2>Plan your journey</h2><!-- /wp:heading --><!-- wp:paragraph --><p>Tell us where you are travelling, your preferred dates and the vehicle you need. Our team will confirm availability and collection arrangements.</p><!-- /wp:paragraph -->' ),
+		'contact' => array( 'title' => 'Contact', 'content' => '<!-- wp:heading --><h2>Contact &amp; Support</h2><!-- /wp:heading --><!-- wp:paragraph --><p>Tell us where you are travelling, your preferred dates and the vehicle you need. Our team will confirm availability and collection arrangements.</p><!-- /wp:paragraph --><!-- wp:paragraph --><p><strong>Phone and WhatsApp:</strong> <a href="tel:+254706449960">+254 706 449960</a></p><!-- /wp:paragraph --><!-- wp:buttons --><div class="wp-block-buttons"><!-- wp:button --><div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://wa.me/254706449960">Contact us on WhatsApp</a></div><!-- /wp:button --></div><!-- /wp:buttons -->' ),
 	);
 	$ids = array();
 	foreach ( $pages as $slug => $page ) {

@@ -3,7 +3,7 @@ Contributors: designphox
 Tags: car rental, fleet, booking, kenya
 Requires at least: 6.4
 Requires PHP: 8.1
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 
 Fleet management, rental estimates, availability and booking requests for websites built with the DriveFlex car-hire theme.

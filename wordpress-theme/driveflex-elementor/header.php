@@ -9,7 +9,7 @@
 <?php wp_body_open(); ?>
 <a class="skip-link screen-reader-text" href="#main-content"><?php esc_html_e( 'Skip to content', 'driveflex-elementor' ); ?></a>
 <?php if ( ! function_exists( 'elementor_theme_do_location' ) || ! elementor_theme_do_location( 'header' ) ) : ?>
-<div class="df-topbar"><div class="df-container"><span>⌖ <?php echo esc_html( driveflex_option( 'driveflex_location', 'Nairobi, Kenya' ) ); ?></span><span>✉ <?php echo esc_html( driveflex_option( 'driveflex_email', 'bookings@example.com' ) ); ?></span><span>☎ <?php echo esc_html( driveflex_option( 'driveflex_phone', '+254 700 000 000' ) ); ?></span></div></div>
+<div class="df-topbar"><div class="df-container"><span>⌖ <?php echo esc_html( driveflex_option( 'driveflex_location', 'Nairobi, Kenya' ) ); ?></span><span>✉ <?php echo esc_html( driveflex_option( 'driveflex_email', 'bookings@example.com' ) ); ?></span><span>☎ <?php echo esc_html( driveflex_option( 'driveflex_phone', '+254 706 449960' ) ); ?></span></div></div>
 <header class="df-header">
 	<div class="df-container df-header-row">
 		<div><?php if ( has_custom_logo() ) { the_custom_logo(); } else { ?><a class="df-brand" href="<?php echo esc_url( home_url( '/' ) ); ?>">Drive<span>Flex</span><small>RENTALS</small></a><?php } ?></div>

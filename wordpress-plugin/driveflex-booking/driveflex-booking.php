@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DesignPhox DriveFlex Theme Fleet & Booking
  * Description: Fleet management, rental estimates, availability and booking requests for websites built with the DriveFlex car-hire theme.
- * Version: 1.2.0
+ * Version: 1.2.1
  * Author: DesignPhox
  * Author URI: https://www.designphox.com
  * Text Domain: driveflex-booking
@@ -12,7 +12,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DRIVEFLEX_VERSION', '1.2.0' );
+define( 'DRIVEFLEX_VERSION', '1.2.1' );
 define( 'DRIVEFLEX_FILE', __FILE__ );
 define( 'DRIVEFLEX_PATH', plugin_dir_path( __FILE__ ) );
 define( 'DRIVEFLEX_URL', plugin_dir_url( __FILE__ ) );

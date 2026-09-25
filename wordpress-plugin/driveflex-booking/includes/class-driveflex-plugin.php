@@ -43,6 +43,9 @@ final class DriveFlex_Plugin {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
 		update_option( 'driveflex_db_version', DRIVEFLEX_VERSION );
+		if ( false === get_option( 'driveflex_whatsapp', false ) ) {
+			add_option( 'driveflex_whatsapp', '254706449960' );
+		}
 		self::instance()->register_vehicle_type();
 		flush_rewrite_rules();
 	}
@@ -374,7 +377,7 @@ final class DriveFlex_Plugin {
 		}
 		echo '<div class="wrap"><h1>DriveFlex Settings</h1><form method="post" action="options.php">';
 		settings_fields( 'driveflex_settings' );
-		echo '<table class="form-table"><tr><th><label for="driveflex_company_name">Company name</label></th><td><input class="regular-text" id="driveflex_company_name" name="driveflex_company_name" value="' . esc_attr( $this->company_name() ) . '"></td></tr><tr><th><label for="driveflex_currency">Currency label</label></th><td><input class="regular-text" id="driveflex_currency" name="driveflex_currency" value="' . esc_attr( $this->currency() ) . '"><p class="description">Examples: KSh, USD, £.</p></td></tr><tr><th><label for="driveflex_locations">Rental locations</label></th><td><textarea class="large-text" rows="5" id="driveflex_locations" name="driveflex_locations">' . esc_textarea( implode( "\n", $this->locations() ) ) . '</textarea><p class="description">One location per line.</p></td></tr><tr><th><label for="driveflex_whatsapp">WhatsApp number</label></th><td><input class="regular-text" id="driveflex_whatsapp" name="driveflex_whatsapp" value="' . esc_attr( get_option( 'driveflex_whatsapp', '' ) ) . '"><p class="description">International format, for example 254700000000.</p></td></tr><tr><th><label for="driveflex_booking_email">Booking email</label></th><td><input class="regular-text" type="email" id="driveflex_booking_email" name="driveflex_booking_email" value="' . esc_attr( get_option( 'driveflex_booking_email', get_option( 'admin_email' ) ) ) . '"></td></tr></table>';
+		echo '<table class="form-table"><tr><th><label for="driveflex_company_name">Company name</label></th><td><input class="regular-text" id="driveflex_company_name" name="driveflex_company_name" value="' . esc_attr( $this->company_name() ) . '"></td></tr><tr><th><label for="driveflex_currency">Currency label</label></th><td><input class="regular-text" id="driveflex_currency" name="driveflex_currency" value="' . esc_attr( $this->currency() ) . '"><p class="description">Examples: KSh, USD, £.</p></td></tr><tr><th><label for="driveflex_locations">Rental locations</label></th><td><textarea class="large-text" rows="5" id="driveflex_locations" name="driveflex_locations">' . esc_textarea( implode( "\n", $this->locations() ) ) . '</textarea><p class="description">One location per line.</p></td></tr><tr><th><label for="driveflex_whatsapp">WhatsApp number</label></th><td><input class="regular-text" id="driveflex_whatsapp" name="driveflex_whatsapp" value="' . esc_attr( get_option( 'driveflex_whatsapp', '254706449960' ) ) . '"><p class="description">International format, for example 254706449960.</p></td></tr><tr><th><label for="driveflex_booking_email">Booking email</label></th><td><input class="regular-text" type="email" id="driveflex_booking_email" name="driveflex_booking_email" value="' . esc_attr( get_option( 'driveflex_booking_email', get_option( 'admin_email' ) ) ) . '"></td></tr></table>';
 		submit_button();
 		echo '</form><hr><h2>DriveFlex starter fleet</h2><p>Load the complete 19-vehicle base fleet for a new DriveFlex-theme website. You can then edit, add or remove vehicles for the client.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="driveflex_import_fleet">';
 		wp_nonce_field( 'driveflex_import_fleet' );
