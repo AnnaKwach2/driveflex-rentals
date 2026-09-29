@@ -1,8 +1,10 @@
 # DriveFlex WordPress + Elementor package
 
+> Do not upload the complete `driveflex-wordpress-import-bundle` ZIP into the WordPress Theme installer. Extract that bundle first. It contains two separate installable ZIP files.
+
 ## Files
 
-- `driveflex-elementor-theme-1.0.1.zip`: install under **Appearance > Themes > Add New**.
+- `UPLOAD-AS-THEME-driveflex-elementor-1.0.1.zip` (same theme archive as `driveflex-elementor-theme-1.0.1.zip`): install under **Appearance > Themes > Add New**.
 - `../wordpress-plugin/designphox-driveflex-booking-1.2.1.zip`: install under **Plugins > Add New**.
 
 ## Installation order
