@@ -52,7 +52,7 @@ function driveflex_customizer( WP_Customize_Manager $customizer ): void {
 add_action( 'customize_register', 'driveflex_customizer' );
 
 function driveflex_default_menu(): void {
-	echo '<ul class="df-menu"><li><a href="' . esc_url( home_url( '/' ) ) . '">Home</a></li><li><a href="' . esc_url( home_url( '/fleet/' ) ) . '">Fleet</a></li><li><a href="' . esc_url( home_url( '/#how-it-works' ) ) . '">How it works</a></li><li><a href="' . esc_url( home_url( '/contact/' ) ) . '">Contact</a></li></ul>';
+	echo '<ul class="df-menu"><li><a href="' . esc_url( home_url( '/' ) ) . '">Home</a></li><li><a href="' . esc_url( home_url( '/fleet/' ) ) . '">Rent a Car</a></li><li><a href="' . esc_url( home_url( '/#deals' ) ) . '">Deals</a></li><li><a href="' . esc_url( home_url( '/#locations' ) ) . '">Locations</a></li><li><a href="' . esc_url( home_url( '/#how-it-works' ) ) . '">How it works</a></li><li><a href="' . esc_url( home_url( '/contact/' ) ) . '">Contact Us</a></li></ul>';
 }
 
 function driveflex_theme_page_templates( array $templates ): array {
@@ -90,6 +90,36 @@ function driveflex_create_starter_pages(): void {
 	}
 }
 add_action( 'after_switch_theme', 'driveflex_create_starter_pages' );
+
+/** Upgrade the untouched starter menu created by earlier theme packages. */
+function driveflex_upgrade_starter_menu(): void {
+	if ( '1.0.2' === get_option( 'driveflex_theme_content_version' ) ) {
+		return;
+	}
+	$locations = get_theme_mod( 'nav_menu_locations', array() );
+	$menu_id   = isset( $locations['primary'] ) ? (int) $locations['primary'] : 0;
+	$items     = $menu_id ? wp_get_nav_menu_items( $menu_id ) : array();
+	$titles    = $items ? array_map( static fn( $item ) => strtolower( trim( $item->title ) ), $items ) : array();
+	$starter   = $items && count( $items ) <= 3 && ! array_diff( $titles, array( 'home', 'fleet', 'contact' ) );
+	if ( $starter ) {
+		foreach ( $items as $item ) {
+			wp_delete_post( $item->ID, true );
+		}
+		$links = array(
+			array( 'Home', home_url( '/' ) ),
+			array( 'Rent a Car', home_url( '/fleet/' ) ),
+			array( 'Deals', home_url( '/#deals' ) ),
+			array( 'Locations', home_url( '/#locations' ) ),
+			array( 'How It Works', home_url( '/#how-it-works' ) ),
+			array( 'Contact Us', home_url( '/contact/' ) ),
+		);
+		foreach ( $links as $link ) {
+			wp_update_nav_menu_item( $menu_id, 0, array( 'menu-item-title' => $link[0], 'menu-item-url' => $link[1], 'menu-item-type' => 'custom', 'menu-item-status' => 'publish' ) );
+		}
+	}
+	update_option( 'driveflex_theme_content_version', '1.0.2' );
+}
+add_action( 'init', 'driveflex_upgrade_starter_menu', 30 );
 
 function driveflex_plugin_notice(): void {
 	if ( current_user_can( 'activate_plugins' ) && ! class_exists( 'DriveFlex_Plugin' ) ) {

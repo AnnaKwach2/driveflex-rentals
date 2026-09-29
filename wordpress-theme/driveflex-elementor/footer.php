@@ -8,7 +8,8 @@
 			<div><h3>Contact</h3><p><a href="<?php echo esc_url( home_url( '/contact/' ) ); ?>">Contact us</a></p><p><a href="tel:+254706449960"><?php echo esc_html( driveflex_option( 'driveflex_phone', '+254 706 449960' ) ); ?></a></p><p><a href="https://wa.me/254706449960" target="_blank" rel="noopener">Message us on WhatsApp</a></p><p><?php echo esc_html( driveflex_option( 'driveflex_email', 'bookings@example.com' ) ); ?></p><p><?php echo esc_html( driveflex_option( 'driveflex_location', 'Nairobi, Kenya' ) ); ?></p></div>
 			<div><h3>Fleet</h3><ul><li><a href="<?php echo esc_url( home_url( '/fleet/' ) ); ?>">Luxury SUV</a></li><li><a href="<?php echo esc_url( home_url( '/fleet/' ) ); ?>">SUV</a></li><li><a href="<?php echo esc_url( home_url( '/fleet/' ) ); ?>">Sedan</a></li><li><a href="<?php echo esc_url( home_url( '/fleet/' ) ); ?>">Van &amp; Mini Van</a></li><li><a href="<?php echo esc_url( home_url( '/fleet/' ) ); ?>">Bus &amp; Pickup</a></li></ul></div>
 		</div>
-		<div class="df-footer-bottom"><span>COPYRIGHT © <?php echo esc_html( gmdate( 'Y' ) ); ?> <?php echo esc_html( strtoupper( get_bloginfo( 'name' ) ) ); ?>. DESIGN BY <a href="https://www.designphox.com" target="_blank" rel="noopener">DesignPhox.</a></span><span><a href="<?php echo esc_url( get_privacy_policy_url() ); ?>">Privacy Policy</a></span></div>
+		<p class="df-footer-description">DriveFlex Rentals provides dependable self-drive, chauffeur-driven and airport car hire services across Kenya.</p>
+		<div class="df-footer-bottom"><span>COPYRIGHT © <?php echo esc_html( gmdate( 'Y' ) ); ?> <?php echo esc_html( strtoupper( get_bloginfo( 'name' ) ) ); ?>. DESIGN BY <a href="https://www.designphox.com" target="_blank" rel="noopener">DesignPhox.</a></span><span><a href="<?php echo esc_url( get_privacy_policy_url() ); ?>">Privacy Policy</a> &nbsp; | &nbsp; <a href="<?php echo esc_url( home_url( '/rental-terms/' ) ); ?>">Rental Terms</a></span></div>
 	</div>
 </footer>
 <?php endif; ?>
