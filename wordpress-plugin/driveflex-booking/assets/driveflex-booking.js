@@ -27,26 +27,36 @@
 
   function card(vehicle) {
     return `<article class="df-card">
+	  <small class="df-card-category">${esc(vehicle.category)}</small>
       <div class="df-card-image">${vehicle.image ? `<img src="${esc(vehicle.image)}" alt="${esc(vehicle.name)}" loading="lazy" decoding="async">` : ''}</div>
-      <div class="df-card-body"><small>${esc(vehicle.category)}</small><h3>${esc(vehicle.name)}</h3>
+	  <div class="df-card-body"><h3>${esc(vehicle.name)} <small>or similar</small></h3>
       <p class="df-price">${money(vehicle.rate)} <span>/ day</span></p>
-      <div class="df-specs"><span>${esc(vehicle.transmission)}</span><span>${vehicle.seats} seats</span><span>${vehicle.luggage} luggage</span><span>${vehicle.doors} doors</span></div>
-      <button class="df-button" data-book="${vehicle.id}" ${vehicle.active ? '' : 'disabled'}>${vehicle.active ? 'Reserve →' : 'Unavailable'}</button></div>
+	  <div class="df-specs"><span><b>⚙</b><small>TRANS</small><strong>${esc(vehicle.transmission)}</strong></span><span><b>♙</b><small>SEATS</small><strong>${vehicle.seats}</strong></span><span><b>▣</b><small>LUGGAGE</small><strong>${vehicle.luggage}</strong></span><span><b>▱</b><small>DOORS</small><strong>${vehicle.doors}</strong></span></div>
+	  <div class="df-card-actions"><button class="df-outline" data-view="${vehicle.id}">View Car</button><button class="df-button df-dark" data-book="${vehicle.id}" ${vehicle.active ? '' : 'disabled'}>${vehicle.active ? 'Reserve ›' : 'Unavailable'}</button></div></div>
     </article>`;
   }
 
   function renderFleet() {
     const categories = ['All', ...new Set(state.vehicles.map(vehicle => vehicle.category))];
-    root.innerHTML = `<section class="df-shell"><div class="df-heading"><div><small>OUR COLLECTION</small><h2>Choose your ${esc(DriveFlexBooking.company)} vehicle</h2></div><label>Category<select id="df-category">${categories.map(category => `<option>${esc(category)}</option>`).join('')}</select></label></div><p class="df-status" id="df-status" aria-live="polite"></p><div class="df-grid" id="df-grid"></div></section><dialog class="df-dialog" id="df-dialog"><button class="df-close" aria-label="Close">×</button><div id="df-dialog-content"></div></dialog>`;
+	root.innerHTML = `<section class="df-shell"><header class="df-fleet-hero"><div><small>OUR COLLECTION</small><h1>Unrivaled Performance.</h1><p>ⓘ &nbsp; Self-drive rentals require a minimum booking period of 3 days.</p></div><span>${esc(DriveFlexBooking.currency)}</span></header><div class="df-fleet-tools"><label>Category<select id="df-category">${categories.map(category => `<option value="${esc(category)}">${category === 'All' ? 'All vehicles' : esc(category)}</option>`).join('')}</select></label><p class="df-status" id="df-status" aria-live="polite"></p><label>Sort<select id="df-sort"><option value="recommended">Recommended</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option></select></label></div><div class="df-grid" id="df-grid"></div><p class="df-fleet-note">Daily rates are shown in Kenyan shillings. Vehicle availability and booking requirements are confirmed for your selected dates.</p></section><dialog class="df-dialog" id="df-dialog"><button class="df-close" aria-label="Close">×</button><div id="df-dialog-content"></div></dialog>`;
     const grid = document.getElementById('df-grid');
-    const draw = category => {
-      const vehicles = state.vehicles.filter(vehicle => category === 'All' || vehicle.category === category);
+	const draw = () => {
+	  const category = document.getElementById('df-category').value;
+	  const sort = document.getElementById('df-sort').value;
+	  const vehicles = state.vehicles.filter(vehicle => category === 'All' || vehicle.category === category);
+	  if (sort === 'price-low') vehicles.sort((a, b) => a.rate - b.rate);
+	  if (sort === 'price-high') vehicles.sort((a, b) => b.rate - a.rate);
       grid.innerHTML = vehicles.map(card).join('');
       document.getElementById('df-status').textContent = `${vehicles.length} vehicles · prices in Kenyan shillings`;
     };
-    document.getElementById('df-category').addEventListener('change', event => draw(event.target.value));
-    draw('All');
+	document.getElementById('df-category').addEventListener('change', draw);
+	document.getElementById('df-sort').addEventListener('change', draw);
+	draw();
   }
+
+	function viewStep(vehicle) {
+	  openDialog(`<div class="df-dialog-body df-vehicle-view">${vehicle.image ? `<img src="${esc(vehicle.image)}" alt="${esc(vehicle.name)}">` : ''}<div><small>${esc(vehicle.category)}</small><h2>${esc(vehicle.name)}</h2><p>${esc(vehicle.description)}</p><p class="df-price">${money(vehicle.rate)} <span>/ day</span></p><div class="df-specs"><span><b>⚙</b><small>TRANS</small><strong>${esc(vehicle.transmission)}</strong></span><span><b>♙</b><small>SEATS</small><strong>${vehicle.seats}</strong></span><span><b>▣</b><small>LUGGAGE</small><strong>${vehicle.luggage}</strong></span><span><b>▱</b><small>DOORS</small><strong>${vehicle.doors}</strong></span></div><button class="df-button df-dark" data-book="${vehicle.id}">Reserve this vehicle ›</button></div></div>`);
+	}
 
   function openDialog(content) {
     const dialog = document.getElementById('df-dialog');
@@ -118,6 +128,8 @@
   root.addEventListener('click', event => {
     const trigger = event.target.closest('[data-book]');
     if (trigger) tripStep(state.vehicles.find(vehicle => String(vehicle.id) === trigger.dataset.book));
+	const view = event.target.closest('[data-view]');
+	if (view) viewStep(state.vehicles.find(vehicle => String(vehicle.id) === view.dataset.view));
     if (event.target.matches('.df-close')) document.getElementById('df-dialog').close();
   });
 

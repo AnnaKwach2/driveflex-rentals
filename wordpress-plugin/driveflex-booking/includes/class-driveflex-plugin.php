@@ -105,6 +105,7 @@ final class DriveFlex_Plugin {
 		}
 		self::install_booking_table();
 		self::ensure_fleet_page();
+		$this->apply_starter_fleet_order();
 		update_option( 'driveflex_db_version', DRIVEFLEX_VERSION );
 		flush_rewrite_rules( false );
 	}
@@ -449,7 +450,7 @@ final class DriveFlex_Plugin {
 		if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'driveflex_import_fleet' ) ) {
 			wp_die( esc_html__( 'You cannot import the fleet.', 'driveflex-booking' ) );
 		}
-		foreach ( $this->starter_fleet() as $vehicle ) {
+		foreach ( $this->starter_fleet() as $position => $vehicle ) {
 			$post = get_page_by_path( $vehicle['slug'], OBJECT, 'driveflex_vehicle' );
 			$post_id = wp_insert_post( array(
 				'ID' => $post ? $post->ID : 0,
@@ -457,6 +458,7 @@ final class DriveFlex_Plugin {
 				'post_status' => 'publish',
 				'post_name' => $vehicle['slug'],
 				'post_title' => $vehicle['name'],
+				'menu_order' => $position,
 				'post_content' => sprintf( '%s available from DriveFlex Rentals for self-drive and chauffeur-driven journeys across Kenya.', $vehicle['name'] ),
 			), true );
 			if ( is_wp_error( $post_id ) ) {
@@ -473,6 +475,15 @@ final class DriveFlex_Plugin {
 		}
 		wp_safe_redirect( admin_url( 'edit.php?post_type=driveflex_vehicle&driveflex_imported=1' ) );
 		exit;
+	}
+
+	private function apply_starter_fleet_order(): void {
+		foreach ( $this->starter_fleet() as $position => $vehicle ) {
+			$post = get_page_by_path( $vehicle['slug'], OBJECT, 'driveflex_vehicle' );
+			if ( $post && (int) $post->menu_order !== $position ) {
+				wp_update_post( array( 'ID' => $post->ID, 'menu_order' => $position ) );
+			}
+		}
 	}
 
 	private function attach_starter_image( int $post_id, string $filename, string $title ): void {
