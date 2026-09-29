@@ -12,6 +12,17 @@ final class DriveFlex_Plugin {
 	}
 
 	public static function activate(): void {
+		self::install_booking_table();
+		update_option( 'driveflex_db_version', DRIVEFLEX_VERSION );
+		if ( false === get_option( 'driveflex_whatsapp', false ) ) {
+			add_option( 'driveflex_whatsapp', '254706449960' );
+		}
+		self::instance()->register_vehicle_type();
+		self::ensure_fleet_page();
+		flush_rewrite_rules();
+	}
+
+	private static function install_booking_table(): void {
 		global $wpdb;
 		$table = $wpdb->prefix . 'driveflex_bookings';
 		$collate = $wpdb->get_charset_collate();
@@ -42,13 +53,6 @@ final class DriveFlex_Plugin {
 		) $collate;";
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
-		update_option( 'driveflex_db_version', DRIVEFLEX_VERSION );
-		if ( false === get_option( 'driveflex_whatsapp', false ) ) {
-			add_option( 'driveflex_whatsapp', '254706449960' );
-		}
-		self::instance()->register_vehicle_type();
-		self::ensure_fleet_page();
-		flush_rewrite_rules();
 	}
 
 	private function __construct() {
@@ -99,6 +103,7 @@ final class DriveFlex_Plugin {
 		if ( DRIVEFLEX_VERSION === (string) get_option( 'driveflex_db_version', '' ) ) {
 			return;
 		}
+		self::install_booking_table();
 		self::ensure_fleet_page();
 		update_option( 'driveflex_db_version', DRIVEFLEX_VERSION );
 		flush_rewrite_rules( false );
@@ -250,6 +255,15 @@ final class DriveFlex_Plugin {
 	}
 
 	public function api_booking( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		try {
+			return $this->create_booking( $request );
+		} catch ( Throwable $error ) {
+			error_log( 'DriveFlex booking error: ' . $error->getMessage() );
+			return new WP_Error( 'booking_failed', __( 'We could not complete the request. Please try again or contact us on WhatsApp.', 'driveflex-booking' ), array( 'status' => 500 ) );
+		}
+	}
+
+	private function create_booking( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$trip = $this->parse_trip( $request );
 		if ( is_wp_error( $trip ) ) {
 			return $trip;
@@ -287,7 +301,12 @@ final class DriveFlex_Plugin {
 		if ( false === $inserted ) {
 			return new WP_Error( 'save_failed', __( 'The request could not be saved. Please try again.', 'driveflex-booking' ), array( 'status' => 500 ) );
 		}
-		$this->send_notifications( $reference, $trip, compact( 'name', 'phone', 'email', 'notes', 'pickup_location', 'dropoff_location' ) );
+		try {
+			$this->send_notifications( $reference, $trip, compact( 'name', 'phone', 'email', 'notes', 'pickup_location', 'dropoff_location' ) );
+		} catch ( Throwable $error ) {
+			// A mail transport failure must not discard a booking already saved in WordPress.
+			error_log( 'DriveFlex notification error for ' . $reference . ': ' . $error->getMessage() );
+		}
 		$message = $this->booking_message( $reference, $trip, compact( 'name', 'phone', 'email', 'notes', 'pickup_location', 'dropoff_location' ) );
 		$whatsapp = preg_replace( '/\D+/', '', (string) get_option( 'driveflex_whatsapp', '' ) );
 		$url = 'https://wa.me/' . $whatsapp . '?text=' . rawurlencode( $message );

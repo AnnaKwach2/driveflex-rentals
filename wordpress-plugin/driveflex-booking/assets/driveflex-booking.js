@@ -9,6 +9,11 @@
   const today = DriveFlexBooking.today;
   const addDays = (date, days) => { const next = new Date(`${date}T12:00:00`); next.setDate(next.getDate() + days); return next.toISOString().slice(0, 10); };
   const locations = () => DriveFlexBooking.locations.map(location => `<option>${esc(location)}</option>`).join('');
+	const cleanError = value => {
+		const box = document.createElement('div');
+		box.innerHTML = String(value || '');
+		return (box.textContent || '').replace(/\s+/g, ' ').trim() || 'Something went wrong. Please try again.';
+	};
 
   async function api(path, options = {}) {
     const response = await fetch(`${DriveFlexBooking.api}${path}`, {
@@ -16,7 +21,7 @@
       headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.message || 'Something went wrong. Please try again.');
+    if (!response.ok) throw new Error(cleanError(data.message));
     return data;
   }
 
@@ -87,11 +92,11 @@
     openDialog(`<div class="df-dialog-body"><div class="df-progress"><span>1. Trip & price</span><b>2. Your details</b></div><small>COMPLETE YOUR REQUEST</small><h2>Your booking details</h2>
       <div class="df-summary">${state.vehicle.image ? `<img src="${esc(state.vehicle.image)}" alt="">` : ''}<div><strong>${esc(state.vehicle.name)}</strong><span>${esc(state.trip.pickup_date)} at ${esc(state.trip.pickup_time)} → ${esc(state.trip.dropoff_date)} at ${esc(state.trip.dropoff_time)}</span><span>${esc(state.trip.pickup_location)} → ${esc(state.trip.dropoff_location)}</span><b>${money(state.estimate.total)} estimated total</b></div></div>
       <form id="df-booking-form"><div class="df-fields">
-      <label>Full name<input name="name" autocomplete="name" required></label><label>Phone number<input name="phone" type="tel" autocomplete="tel" required></label>
-      <label>Email address<input name="email" type="email" autocomplete="email" required></label><label class="df-wide">Trip details / request notes<textarea name="notes" rows="4" required></textarea></label></div>
+	  <label>Full Name<input name="name" autocomplete="name" required></label><label>Phone Number<input name="phone" type="tel" autocomplete="tel" placeholder="e.g. +254 700 000 000" required></label>
+	  <label>Email Address<input name="email" type="email" autocomplete="email" required></label><label>ID / Passport Number (optional)<input type="text" placeholder="Required later when paying for the vehicle" disabled></label><label class="df-wide">Trip details / request notes<textarea name="notes" rows="4" placeholder="Tell us about your trip, delivery request or other requirements" required></textarea></label></div>
       <label class="df-consent"><input name="terms" type="checkbox" value="1" required> I confirm these trip details and agree to the rental terms.</label>
-      <p class="df-error" id="df-error" role="alert"></p><div class="df-actions"><button class="df-outline" id="df-back" type="button">← Back</button><button class="df-button" type="submit">Send booking request →</button></div>
-      <p class="df-note">ID/passport and payment are requested only after ${esc(DriveFlexBooking.company)} confirms vehicle availability.</p></form></div>`);
+	  <p class="df-error" id="df-error" role="alert"></p><div class="df-actions"><button class="df-outline" id="df-back" type="button">← Back</button><button class="df-button" type="submit">Prepare booking request →</button></div>
+	  <p class="df-note">Your vehicle is confirmed after the ${esc(DriveFlexBooking.company)} team verifies availability and contacts you. ID/passport and payment are requested later.</p></form></div>`);
     document.getElementById('df-back').onclick = () => tripStep(state.vehicle);
     document.getElementById('df-booking-form').addEventListener('submit', submitBooking);
   }
