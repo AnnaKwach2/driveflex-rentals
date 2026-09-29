@@ -5,7 +5,7 @@
 ## Files
 
 - `UPLOAD-AS-THEME-driveflex-elementor-1.0.1.zip` (same theme archive as `driveflex-elementor-theme-1.0.1.zip`): install under **Appearance > Themes > Add New**.
-- `../wordpress-plugin/designphox-driveflex-booking-1.2.1.zip`: install under **Plugins > Add New**.
+- `../wordpress-plugin/designphox-driveflex-booking-1.2.2.zip`: install under **Plugins > Add New**.
 
 ## Installation order
 

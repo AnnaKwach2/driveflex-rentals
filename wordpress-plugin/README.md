@@ -18,7 +18,7 @@ This folder contains the DesignPhox plugin for WordPress websites created from t
 ## Installation
 
 1. In WordPress, open **Plugins > Add New > Upload Plugin**.
-2. Upload `designphox-driveflex-booking-1.2.0.zip`, install and activate it.
+2. Upload `designphox-driveflex-booking-1.2.2.zip`, install and activate it.
 3. Open **DriveFlex Vehicles > Settings** and set the booking email and WhatsApp number.
 4. Select **Import or update starter fleet**, then edit the vehicles for the client.
 5. Add `[driveflex_fleet]` to the Fleet page.
@@ -32,6 +32,8 @@ The plugin stores fleet records as a custom post type and booking records in a d
 The current release is a request-and-confirm workflow. Online M-Pesa/card payment, deposits and private ID uploads should be a second phase after the merchant account, refund rules, deposit percentage, privacy notice and document retention period are decided.
 
 The plugin is the fleet database for every site built from the DriveFlex theme. The theme reads its vehicle records directly, so there is no separate fleet to detect or synchronize. Import the base fleet once on a new site, then customize it for the client in WordPress.
+
+The public Fleet page uses the `/fleet/` page containing `[driveflex_fleet]`. Individual vehicle records use `/vehicle/...`; the plugin does not register a competing `/fleet/` archive.
 
 ## Size and maintenance
 

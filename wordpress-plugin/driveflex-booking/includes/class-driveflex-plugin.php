@@ -47,11 +47,13 @@ final class DriveFlex_Plugin {
 			add_option( 'driveflex_whatsapp', '254706449960' );
 		}
 		self::instance()->register_vehicle_type();
+		self::ensure_fleet_page();
 		flush_rewrite_rules();
 	}
 
 	private function __construct() {
 		add_action( 'init', array( $this, 'register_vehicle_type' ) );
+		add_action( 'init', array( $this, 'maybe_upgrade' ), 20 );
 		add_action( 'add_meta_boxes', array( $this, 'add_vehicle_meta_box' ) );
 		add_action( 'save_post_driveflex_vehicle', array( $this, 'save_vehicle' ) );
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
@@ -77,8 +79,8 @@ final class DriveFlex_Plugin {
 				'show_in_rest' => true,
 				'menu_icon' => 'dashicons-car',
 				'supports' => array( 'title', 'thumbnail', 'editor' ),
-				'has_archive' => true,
-				'rewrite' => array( 'slug' => 'fleet' ),
+				'has_archive' => false,
+				'rewrite' => array( 'slug' => 'vehicle', 'with_front' => false ),
 			)
 		);
 		register_taxonomy(
@@ -91,6 +93,30 @@ final class DriveFlex_Plugin {
 				'show_in_rest' => true,
 			)
 		);
+	}
+
+	public function maybe_upgrade(): void {
+		if ( DRIVEFLEX_VERSION === (string) get_option( 'driveflex_db_version', '' ) ) {
+			return;
+		}
+		self::ensure_fleet_page();
+		update_option( 'driveflex_db_version', DRIVEFLEX_VERSION );
+		flush_rewrite_rules( false );
+	}
+
+	private static function ensure_fleet_page(): void {
+		$page = get_page_by_path( 'fleet', OBJECT, 'page' );
+		if ( ! $page ) {
+			wp_insert_post( array(
+				'post_type' => 'page',
+				'post_status' => 'publish',
+				'post_name' => 'fleet',
+				'post_title' => 'Fleet',
+				'post_content' => '<!-- wp:shortcode -->[driveflex_fleet]<!-- /wp:shortcode -->',
+			) );
+		} elseif ( '' === trim( $page->post_content ) ) {
+			wp_update_post( array( 'ID' => $page->ID, 'post_content' => '<!-- wp:shortcode -->[driveflex_fleet]<!-- /wp:shortcode -->' ) );
+		}
 	}
 
 	public function add_vehicle_meta_box(): void {
