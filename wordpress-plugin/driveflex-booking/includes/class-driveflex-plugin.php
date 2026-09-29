@@ -328,12 +328,25 @@ final class DriveFlex_Plugin {
 	private function booking_message( string $reference, array $trip, array $customer ): string {
 		$company = $this->company_name();
 		$currency = $this->currency();
-		return sprintf(
-			"%s booking request\nReference: %s\nVehicle: %s\nRental: %d days at %s %s per day\nPick-up: %s — %s\nDrop-off: %s — %s\nEstimated total: %s %s\nCustomer: %s\nPhone: %s\nEmail: %s\nRequest details: %s",
-			$company, $reference, $trip['vehicle']['name'], $trip['days'], $currency, number_format_i18n( $trip['vehicle']['rate'] ),
-			$trip['pickup']->format( 'Y-m-d H:i' ), $customer['pickup_location'], $trip['dropoff']->format( 'Y-m-d H:i' ),
-			$customer['dropoff_location'], $currency, number_format_i18n( $trip['total'] ), $customer['name'], $customer['phone'], $customer['email'], $customer['notes']
+		$lines = array(
+			$company . ' booking request',
+			'Vehicle: ' . $trip['vehicle']['name'],
 		);
+		if ( ! empty( $trip['vehicle']['image'] ) ) {
+			$lines[] = 'Vehicle image: ' . esc_url_raw( $trip['vehicle']['image'] );
+		}
+		$lines = array_merge( $lines, array(
+			'Reference: ' . $reference,
+			sprintf( 'Rental: %d days at %s %s per day', $trip['days'], $currency, number_format_i18n( $trip['vehicle']['rate'] ) ),
+			'Pick-up: ' . $trip['pickup']->format( 'Y-m-d H:i' ) . ' — ' . $customer['pickup_location'],
+			'Drop-off: ' . $trip['dropoff']->format( 'Y-m-d H:i' ) . ' — ' . $customer['dropoff_location'],
+			sprintf( 'Estimated total: %s %s', $currency, number_format_i18n( $trip['total'] ) ),
+			'Customer: ' . $customer['name'],
+			'Phone: ' . $customer['phone'],
+			'Email: ' . $customer['email'],
+			'Request details: ' . $customer['notes'],
+		) );
+		return implode( "\n", $lines );
 	}
 
 	private function send_notifications( string $reference, array $trip, array $customer ): void {
