@@ -4,7 +4,7 @@
 
 ## Files
 
-- `UPLOAD-AS-THEME-driveflex-elementor-1.0.4.zip` (same theme archive as `driveflex-elementor-theme-1.0.4.zip`): install under **Appearance > Themes > Add New**.
+- `UPLOAD-AS-THEME-driveflex-elementor-1.0.5.zip` (same theme archive as `driveflex-elementor-theme-1.0.5.zip`): install under **Appearance > Themes > Add New**.
 - `../wordpress-plugin/designphox-driveflex-booking-1.2.6.zip`: install under **Plugins > Add New**.
 
 ## Installation order
@@ -14,7 +14,7 @@
 3. Install and activate the DriveFlex Elementor theme.
 4. The theme creates Home, Fleet and Contact pages plus the primary navigation. It sets Home as the static front page.
 5. Open **Vehicles > Settings**, enter the company information, then select **Import or update starter fleet**.
-6. Open **Appearance > Customize > DriveFlex business details** for contact and social links.
+6. Open **Appearance > Customize > DriveFlex business details** for contact details, all five social links and the shared social-icon size control.
 7. Open a page and select **Edit with Elementor**. Once Elementor content is saved, that content replaces the theme's fallback page design.
 
 ## Elementor settings

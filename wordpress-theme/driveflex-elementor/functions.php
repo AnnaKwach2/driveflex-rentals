@@ -42,14 +42,27 @@ function driveflex_customizer( WP_Customize_Manager $customizer ): void {
 		'driveflex_phone' => array( 'Phone', '+254 706 449960' ), 'driveflex_email' => array( 'Email', 'bookings@example.com' ),
 		'driveflex_location' => array( 'Location', 'Nairobi, Kenya' ), 'driveflex_facebook' => array( 'Facebook URL', 'https://facebook.com/' ),
 		'driveflex_instagram' => array( 'Instagram URL', 'https://instagram.com/' ), 'driveflex_linkedin' => array( 'LinkedIn URL', 'https://linkedin.com/' ),
-		'driveflex_x' => array( 'X URL', 'https://x.com/' ),
+		'driveflex_x' => array( 'X URL', 'https://x.com/' ), 'driveflex_whatsapp' => array( 'WhatsApp URL', 'https://wa.me/254706449960' ),
 	);
 	foreach ( $fields as $id => $field ) {
-		$customizer->add_setting( $id, array( 'default' => $field[1], 'sanitize_callback' => str_contains( $id, 'facebook' ) || str_contains( $id, 'instagram' ) || str_contains( $id, 'linkedin' ) || 'driveflex_x' === $id ? 'esc_url_raw' : 'sanitize_text_field' ) );
+		$customizer->add_setting( $id, array( 'default' => $field[1], 'sanitize_callback' => str_contains( $id, 'facebook' ) || str_contains( $id, 'instagram' ) || str_contains( $id, 'linkedin' ) || str_contains( $id, 'whatsapp' ) || 'driveflex_x' === $id ? 'esc_url_raw' : 'sanitize_text_field' ) );
 		$customizer->add_control( $id, array( 'label' => $field[0], 'section' => 'driveflex_business' ) );
 	}
+	$customizer->add_setting( 'driveflex_social_size', array( 'default' => 27, 'sanitize_callback' => static fn( $value ) => max( 18, min( 48, absint( $value ) ) ) ) );
+	$customizer->add_control( 'driveflex_social_size', array( 'label' => 'Social icon size', 'section' => 'driveflex_business', 'type' => 'range', 'input_attrs' => array( 'min' => 18, 'max' => 48, 'step' => 1 ) ) );
 }
 add_action( 'customize_register', 'driveflex_customizer' );
+
+function driveflex_social_icon( string $network ): string {
+	$icons = array(
+		'facebook' => '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M14 8h3V4h-3c-3.3 0-5 2-5 5v2H6v4h3v9h4v-9h3.5l.5-4h-4V9c0-.7.3-1 1-1z"/></svg>',
+		'instagram' => '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.25"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>',
+		'linkedin' => '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><circle cx="5" cy="5" r="2"/><path d="M3.2 9h3.6v12H3.2zM10 9h3.5v1.7c1-1.3 2.3-2.1 4.1-2.1 3 0 4.4 1.9 4.4 5.5V21h-3.7v-6.3c0-1.8-.6-2.8-2.1-2.8-1.7 0-2.5 1.1-2.5 3.3V21H10z"/></svg>',
+		'x' => '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 3l16 18M20 3L4 21"/></svg>',
+		'whatsapp' => '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.8a8.5 8.5 0 0 1-12.6 7.4L3 20.5l1.3-4.7a8.5 8.5 0 1 1 16.2-4z"/><path d="M8.2 7.6c.4-.5.8-.4 1.1.1l1 2c.2.4.1.7-.2 1l-.7.7c.8 1.8 2 3 3.8 3.8l.8-.9c.3-.3.6-.4 1-.2l1.9.9c.5.2.6.6.4 1.1-.5 1.1-1.5 1.7-2.8 1.6-3.8-.5-7.8-4.4-8.2-8.2-.1-.8.2-1.4.9-1.9z"/></svg>',
+	);
+	return $icons[ $network ] ?? '';
+}
 
 function driveflex_default_menu(): void {
 	echo '<ul class="df-menu"><li><a href="' . esc_url( home_url( '/' ) ) . '">Home</a></li><li><a href="' . esc_url( home_url( '/fleet/' ) ) . '">Rent a Car</a></li><li><a href="' . esc_url( home_url( '/#deals' ) ) . '">Deals</a></li><li><a href="' . esc_url( home_url( '/#locations' ) ) . '">Locations</a></li><li><a href="' . esc_url( home_url( '/#how-it-works' ) ) . '">How it works</a></li><li><a href="' . esc_url( home_url( '/contact/' ) ) . '">Contact Us</a></li></ul>';
