@@ -67,16 +67,34 @@
 
   function tripStep(vehicle) {
     state.vehicle = vehicle;
-    openDialog(`<div class="df-dialog-body"><div class="df-progress"><b>1. Trip & price</b><span>2. Your details</span></div><small>PLAN YOUR RENTAL</small><h2>${esc(vehicle.name)}</h2><p>${money(vehicle.rate)} per day · ${vehicle.minimum_days}-day minimum</p>
-      <form id="df-estimate-form"><div class="df-fields">
-      <label>Pick-up date<input name="pickup_date" type="date" min="${today}" value="${today}" required></label>
-      <label>Drop-off date<input name="dropoff_date" type="date" min="${addDays(today, vehicle.minimum_days)}" value="${addDays(today, vehicle.minimum_days)}" required></label>
+	openDialog(`<div class="df-dialog-body"><div class="df-progress"><b>1. Trip & price</b><span>2. Your details</span></div><small>PLAN YOUR RENTAL</small><h2>${esc(vehicle.name)}</h2><p>${money(vehicle.rate)} per day · choose your service type</p>
+	  <form id="df-estimate-form"><fieldset class="df-service-selector"><legend>Service Type</legend><label><input type="radio" name="service_type" value="self_drive" required><span>Self Drive</span></label><label><input type="radio" name="service_type" value="with_driver" required><span>With Driver</span></label></fieldset><div class="df-service-notice" id="df-service-notice">Select a service type to see its minimum booking period.</div><div class="df-fields">
+      <label>Pick-up date<input name="pickup_date" type="date" min="${today}" value="${addDays(today, 1)}" required></label>
+	  <label>Drop-off date<input name="dropoff_date" type="date" min="${addDays(today, 2)}" value="${addDays(today, 2)}" required></label>
       <label>Pick-up time<input name="pickup_time" type="time" value="10:00" required></label>
       <label>Drop-off time<input name="dropoff_time" type="time" value="10:00" required></label>
       <label>Pick-up location<select name="pickup_location">${locations()}</select></label>
       <label>Drop-off location<select name="dropoff_location">${locations()}</select></label></div>
       <p class="df-error" id="df-error" role="alert"></p><div id="df-estimate-result"></div><div class="df-actions"><button class="df-button" type="submit">Calculate estimate →</button><button class="df-button df-dark" id="df-continue" type="button" hidden>Continue to booking →</button></div></form></div>`);
-    document.getElementById('df-estimate-form').addEventListener('submit', calculate);
+	const form = document.getElementById('df-estimate-form');
+	const pickup = form.elements.pickup_date;
+	const dropoff = form.elements.dropoff_date;
+	const notice = document.getElementById('df-service-notice');
+	const syncMinimum = () => {
+	  const selected = form.querySelector('[name="service_type"]:checked')?.value;
+	  const days = selected === 'self_drive' ? vehicle.minimum_days : 1;
+	  const earliest = addDays(pickup.value || today, days);
+	  dropoff.min = earliest;
+	  if (!dropoff.value || dropoff.value < earliest) dropoff.value = earliest;
+	  notice.innerHTML = selected === 'self_drive'
+	    ? `<strong>${days}-Day Minimum</strong><span>Self-drive bookings require a minimum rental period of ${days} days.</span>`
+	    : selected === 'with_driver'
+	      ? '<strong>With Driver</strong><span>Bookings with a driver can be requested for one day or longer. Driver service charges are confirmed by DriveFlex Rentals.</span>'
+	      : 'Select a service type to see its minimum booking period.';
+	};
+	form.querySelectorAll('[name="service_type"]').forEach(input => input.addEventListener('change', syncMinimum));
+	pickup.addEventListener('change', syncMinimum);
+	form.addEventListener('submit', calculate);
   }
 
   async function calculate(event) {
@@ -88,7 +106,7 @@
     try {
       state.estimate = await api('/estimate', { method: 'POST', body: JSON.stringify(state.trip) });
       error.textContent = '';
-      document.getElementById('df-estimate-result').innerHTML = `<div class="df-estimate"><div><strong>${state.estimate.days} days × ${money(state.estimate.daily_rate)}</strong>${state.estimate.discount ? `<small>${state.estimate.discount_percent}% long-term saving (−${money(state.estimate.discount)})</small>` : ''}<small>Estimated rental total</small></div><b>${money(state.estimate.total)}</b></div>${state.estimate.available ? '' : '<p class="df-warning">These dates currently overlap a reserved booking. You can still send a request for alternative availability.</p>'}`;
+	  document.getElementById('df-estimate-result').innerHTML = `<div class="df-estimate"><div><strong>${state.estimate.days} days × ${money(state.estimate.daily_rate)}</strong>${state.estimate.discount ? `<small>${state.estimate.discount_percent}% long-term saving (−${money(state.estimate.discount)})</small>` : ''}<small>Estimated vehicle rental total</small>${state.trip.service_type === 'with_driver' ? '<small>Driver service charges will be confirmed by DriveFlex Rentals.</small>' : ''}</div><b>${money(state.estimate.total)}</b></div>${state.estimate.available ? '' : '<p class="df-warning">These dates currently overlap a reserved booking. You can still send a request for alternative availability.</p>'}`;
       const next = document.getElementById('df-continue');
       next.hidden = false;
       next.onclick = detailsStep;
@@ -99,15 +117,24 @@
   }
 
   function detailsStep() {
+	const serviceLabel = state.trip.service_type === 'self_drive' ? 'Self Drive' : 'With Driver';
     openDialog(`<div class="df-dialog-body"><div class="df-progress"><span>1. Trip & price</span><b>2. Your details</b></div><small>COMPLETE YOUR REQUEST</small><h2>Your booking details</h2>
-      <div class="df-summary">${state.vehicle.image ? `<img src="${esc(state.vehicle.image)}" alt="">` : ''}<div><strong>${esc(state.vehicle.name)}</strong><span>${esc(state.trip.pickup_date)} at ${esc(state.trip.pickup_time)} → ${esc(state.trip.dropoff_date)} at ${esc(state.trip.dropoff_time)}</span><span>${esc(state.trip.pickup_location)} → ${esc(state.trip.dropoff_location)}</span><b>${money(state.estimate.total)} estimated total</b></div></div>
+	  <div class="df-summary">${state.vehicle.image ? `<img src="${esc(state.vehicle.image)}" alt="">` : ''}<div><strong>${esc(state.vehicle.name)}</strong><span>${esc(serviceLabel)}</span><span>${esc(state.trip.pickup_date)} at ${esc(state.trip.pickup_time)} → ${esc(state.trip.dropoff_date)} at ${esc(state.trip.dropoff_time)}</span><span>${esc(state.trip.pickup_location)} → ${esc(state.trip.dropoff_location)}</span><b>${money(state.estimate.total)} estimated vehicle rental total</b></div></div>
       <form id="df-booking-form"><div class="df-fields">
 	  <label>Full Name<input name="name" autocomplete="name" required></label><label>Phone Number<input name="phone" type="tel" autocomplete="tel" placeholder="e.g. +254 700 000 000" required></label>
-	  <label>Email Address<input name="email" type="email" autocomplete="email" required></label><label>ID / Passport Number (optional)<input type="text" placeholder="Required later when paying for the vehicle" disabled></label><label class="df-wide">Trip details / request notes<textarea name="notes" rows="4" placeholder="Tell us about your trip, delivery request or other requirements" required></textarea></label></div>
-      <label class="df-consent"><input name="terms" type="checkbox" value="1" required> I confirm these trip details and agree to the rental terms.</label>
+	  <label>Email Address<input name="email" type="email" autocomplete="email" required></label><label>ID / Passport Number (optional)<input type="text" placeholder="Required later when paying for the vehicle" disabled></label><label class="df-wide">Intended Area of Use<input name="intended_area" type="text" placeholder="e.g. Nairobi, Naivasha and Nakuru" required></label><label class="df-wide">Trip details / request notes<textarea name="notes" rows="4" placeholder="Tell us about your trip, delivery request or other requirements" required></textarea></label></div>
+	  <div class="df-organization"><label class="df-consent"><input id="df-organization-toggle" name="organization_booking" type="checkbox" value="1"> I am making this booking on behalf of my organization</label><label id="df-organization-name" hidden>Organization Name<input name="organization_name" type="text" placeholder="Enter organization name"></label></div>
+	  <div class="df-discount"><label>Discount Code <small>(optional)</small><input name="discount_code" type="text" placeholder="ENTER CODE"></label></div>
+	  <div class="df-agreements"><label class="df-consent"><input name="terms" type="checkbox" value="1" required> <span>I acknowledge that I have read and agree to the <a href="${esc(DriveFlexBooking.termsUrl)}" target="_blank" rel="noopener">Terms of Service</a> and <a href="${esc(DriveFlexBooking.privacyUrl)}" target="_blank" rel="noopener">Privacy Policy</a> set by DriveFlex Rentals.</span></label>${state.trip.service_type === 'self_drive' ? '<label class="df-consent"><input name="license_confirmed" type="checkbox" value="1" required> <span>I confirm that I have held a valid driver’s licence for 3 years or longer.</span></label>' : ''}</div>
 	  <p class="df-error" id="df-error" role="alert"></p><div class="df-actions"><button class="df-outline" id="df-back" type="button">← Back</button><button class="df-button" type="submit">Prepare booking request →</button></div>
 	  <p class="df-note">Your vehicle is confirmed after the ${esc(DriveFlexBooking.company)} team verifies availability and contacts you. ID/passport and payment are requested later.</p></form></div>`);
     document.getElementById('df-back').onclick = () => tripStep(state.vehicle);
+	const organizationToggle = document.getElementById('df-organization-toggle');
+	const organizationName = document.getElementById('df-organization-name');
+	organizationToggle.addEventListener('change', () => {
+	  organizationName.hidden = !organizationToggle.checked;
+	  organizationName.querySelector('input').required = organizationToggle.checked;
+	});
     document.getElementById('df-booking-form').addEventListener('submit', submitBooking);
   }
 
@@ -117,7 +144,7 @@
     const fields = Object.fromEntries(new FormData(event.currentTarget).entries());
     button.disabled = true;
     try {
-      const result = await api('/bookings', { method: 'POST', body: JSON.stringify({ ...state.trip, ...fields, vehicle_id: state.vehicle.id, terms: true }) });
+	  const result = await api('/bookings', { method: 'POST', body: JSON.stringify({ ...state.trip, ...fields, vehicle_id: state.vehicle.id }) });
       openDialog(`<div class="df-confirmation"><span>✓</span><small>REQUEST RECEIVED</small><h2>Thank you</h2><p>Your reference is <strong>${esc(result.reference)}</strong>. ${esc(DriveFlexBooking.company)} will contact you after checking availability.</p><div class="df-estimate"><strong>${esc(state.vehicle.name)} · ${state.estimate.days} days</strong><b>${money(state.estimate.total)}</b></div>${result.whatsapp_url ? `<a class="df-button" href="${esc(result.whatsapp_url)}" target="_blank" rel="noopener">Continue on WhatsApp →</a>` : ''}</div>`);
     } catch (err) {
       document.getElementById('df-error').textContent = err.message;

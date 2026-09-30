@@ -8,17 +8,19 @@ This folder contains the DesignPhox plugin for WordPress websites created from t
 - One-click import for the 19 vehicles currently used by the DriveFlex website.
 - Configurable company name, currency, rental locations, email and WhatsApp number.
 - Responsive `[driveflex_fleet]` shortcode with category filtering.
-- Two-step booking request: trip and server-calculated price, then customer details.
-- Nairobi-time date validation, three-day minimum rental and 30% discount for 30+ days.
+- Two-step booking request: service type, trip and server-calculated price, then customer details.
+- Self Drive requires the configured minimum rental period; With Driver accepts one-day requests.
+- Intended area of use, organization bookings, optional discount codes and service-specific declarations.
+- Nairobi-time date validation, self-drive minimum rental and 30% discount for 30+ days.
 - Availability checks that prevent staff from holding overlapping bookings.
 - Booking references, administrator/customer email notifications and WhatsApp handoff.
 - WordPress dashboard statuses: Requested, Available, Unavailable, Awaiting Payment, Confirmed, Completed and Cancelled.
-- Name, phone, email, trip notes and acceptance are mandatory. ID/passport and payment are deferred until availability is confirmed.
+- Name, phone, email, intended area, trip notes and acceptance are mandatory. Organization name and licence eligibility are conditionally required. ID/passport and payment are deferred until availability is confirmed.
 
 ## Installation
 
 1. In WordPress, open **Plugins > Add New > Upload Plugin**.
-2. Upload `designphox-driveflex-booking-1.2.5.zip`, install and activate it.
+2. Upload `designphox-driveflex-booking-1.2.6.zip`, install and activate it.
 3. Open **DriveFlex Vehicles > Settings** and set the booking email and WhatsApp number.
 4. Select **Import or update starter fleet**, then edit the vehicles for the client.
 5. Add `[driveflex_fleet]` to the Fleet page.
