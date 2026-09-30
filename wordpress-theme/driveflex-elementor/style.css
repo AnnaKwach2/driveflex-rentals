@@ -4,7 +4,7 @@ Theme URI: https://www.designphox.com
 Author: DesignPhox
 Author URI: https://www.designphox.com
 Description: Lightweight Elementor-ready WordPress theme for DriveFlex car-hire websites.
-Version: 1.0.3
+Version: 1.0.4
 Requires at least: 6.4
 Requires PHP: 8.1
 Text Domain: driveflex-elementor
@@ -21,3 +21,6 @@ Text Domain: driveflex-elementor
 @media(max-width:900px){.df-search-panel{position:relative;left:auto;bottom:auto;transform:none;margin:0 auto 25px}.df-deal-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:640px){.df-search-tabs{width:100%}.df-search-tabs button{flex:1;padding-inline:8px}.df-search-panel .df-search{grid-template-columns:1fr;border-radius:0 0 10px 10px}.df-deal-grid{grid-template-columns:1fr 1fr}.df-benefit-grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.df-deal-card,.df-benefit{transition:none}.df-deal-card:hover,.df-benefit:hover{transform:none}}
+/* Align hero copy with the booking panel */
+.df-hero .df-hero-copy{width:min(90%,var(--df-container));max-width:var(--df-container);margin-inline:auto}.df-hero-copy>h1,.df-hero-copy>p{max-width:700px}.df-hero-copy>.df-perks{max-width:760px}
+@media(max-width:640px){.df-hero-copy>h1,.df-hero-copy>p,.df-hero-copy>.df-perks{max-width:100%}}
