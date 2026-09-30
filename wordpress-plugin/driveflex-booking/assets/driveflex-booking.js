@@ -68,7 +68,7 @@
   function tripStep(vehicle) {
     state.vehicle = vehicle;
 	openDialog(`<div class="df-dialog-body"><div class="df-progress"><b>1. Trip & price</b><span>2. Your details</span></div><small>PLAN YOUR RENTAL</small><h2>${esc(vehicle.name)}</h2><p>${money(vehicle.rate)} per day · choose your service type</p>
-	  <form id="df-estimate-form"><fieldset class="df-service-selector"><legend>Service Type</legend><label><input type="radio" name="service_type" value="self_drive" required><span>Self Drive</span></label><label><input type="radio" name="service_type" value="with_driver" required><span>With Driver</span></label></fieldset><div class="df-service-notice" id="df-service-notice">Select a service type to see its minimum booking period.</div><div class="df-fields">
+	  <form id="df-estimate-form"><fieldset class="df-service-selector"><legend>Service Type</legend><label><input type="radio" name="service_type" value="self_drive" required><span>Self Drive</span></label><label><input type="radio" name="service_type" value="with_driver" required><span>With Driver</span></label></fieldset><div class="df-service-notice" id="df-service-notice">Select a service type to see its minimum booking period.</div><div class="df-license-fields" id="df-license-fields" hidden><label>Driver’s Licence Number<input name="license_number" type="text" autocomplete="off" maxlength="100"></label><fieldset><legend>Licence Expiry Date</legend><select name="license_expiry_day" aria-label="Licence expiry day"><option value="">Day</option>${Array.from({length:31},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select><select name="license_expiry_month" aria-label="Licence expiry month"><option value="">Month</option>${['January','February','March','April','May','June','July','August','September','October','November','December'].map((month,i)=>`<option value="${i+1}">${month}</option>`).join('')}</select><select name="license_expiry_year" aria-label="Licence expiry year"><option value="">Year</option>${Array.from({length:16},(_,i)=>`<option value="${Number(today.slice(0,4))+i}">${Number(today.slice(0,4))+i}</option>`).join('')}</select></fieldset></div><div class="df-fields">
       <label>Pick-up date<input name="pickup_date" type="date" min="${today}" value="${addDays(today, 1)}" required></label>
 	  <label>Drop-off date<input name="dropoff_date" type="date" min="${addDays(today, 2)}" value="${addDays(today, 2)}" required></label>
       <label>Pick-up time<input name="pickup_time" type="time" value="10:00" required></label>
@@ -80,6 +80,7 @@
 	const pickup = form.elements.pickup_date;
 	const dropoff = form.elements.dropoff_date;
 	const notice = document.getElementById('df-service-notice');
+	const licenseFields = document.getElementById('df-license-fields');
 	const syncMinimum = () => {
 	  const selected = form.querySelector('[name="service_type"]:checked')?.value;
 	  const days = selected === 'self_drive' ? vehicle.minimum_days : 1;
@@ -91,6 +92,11 @@
 	    : selected === 'with_driver'
 	      ? '<strong>With Driver</strong><span>Bookings with a driver can be requested for one day or longer. Driver service charges are confirmed by DriveFlex Rentals.</span>'
 	      : 'Select a service type to see its minimum booking period.';
+	  licenseFields.hidden = selected !== 'self_drive';
+	  licenseFields.querySelectorAll('input,select').forEach(field => {
+		field.required = selected === 'self_drive';
+		if (selected !== 'self_drive') field.value = '';
+	  });
 	};
 	form.querySelectorAll('[name="service_type"]').forEach(input => input.addEventListener('change', syncMinimum));
 	pickup.addEventListener('change', syncMinimum);

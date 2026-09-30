@@ -11,6 +11,7 @@ This folder contains the DesignPhox plugin for WordPress websites created from t
 - Two-step booking request: service type, trip and server-calculated price, then customer details.
 - Self Drive requires the configured minimum rental period; With Driver accepts one-day requests.
 - Intended area of use, organization bookings, optional discount codes and service-specific declarations.
+- Mandatory driver’s licence number and future expiry date for Self Drive; these fields remain hidden for With Driver.
 - Nairobi-time date validation, self-drive minimum rental and 30% discount for 30+ days.
 - Availability checks that prevent staff from holding overlapping bookings.
 - Booking references, administrator/customer email notifications and WhatsApp handoff.
@@ -20,7 +21,7 @@ This folder contains the DesignPhox plugin for WordPress websites created from t
 ## Installation
 
 1. In WordPress, open **Plugins > Add New > Upload Plugin**.
-2. Upload `designphox-driveflex-booking-1.2.6.zip`, install and activate it.
+2. Upload `designphox-driveflex-booking-1.2.7.zip`, install and activate it.
 3. Open **DriveFlex Vehicles > Settings** and set the booking email and WhatsApp number.
 4. Select **Import or update starter fleet**, then edit the vehicles for the client.
 5. Add `[driveflex_fleet]` to the Fleet page.

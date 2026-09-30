@@ -35,6 +35,8 @@ final class DriveFlex_Plugin {
 			phone varchar(60) NOT NULL,
 			email varchar(190) NOT NULL,
 			service_type varchar(24) NOT NULL DEFAULT 'self_drive',
+			license_number varchar(100) NOT NULL DEFAULT '',
+			license_expiry varchar(10) NOT NULL DEFAULT '',
 			intended_area varchar(255) NOT NULL DEFAULT '',
 			organization_name varchar(190) NOT NULL DEFAULT '',
 			discount_code varchar(60) NOT NULL DEFAULT '',
@@ -141,7 +143,7 @@ final class DriveFlex_Plugin {
 			),
 			'privacy-policy' => array(
 				'Privacy Policy',
-				'<!-- wp:heading --><h2>DriveFlex Rentals privacy policy</h2><!-- /wp:heading --><!-- wp:paragraph --><p>DriveFlex Rentals collects the contact and trip information submitted through this website to assess availability, prepare rental requests, communicate with customers and administer confirmed rentals.</p><!-- /wp:paragraph --><!-- wp:paragraph --><p>Booking information is accessible to authorized staff and service providers required to operate the website and deliver customer communications. Customers may contact DriveFlex Rentals to request access to or correction of their personal information.</p><!-- /wp:paragraph -->',
+				'<!-- wp:heading --><h2>DriveFlex Rentals privacy policy</h2><!-- /wp:heading --><!-- wp:paragraph --><p>DriveFlex Rentals collects the contact and trip information submitted through this website to assess availability, prepare rental requests, communicate with customers and administer confirmed rentals. For self-drive requests, this includes the driver’s licence number and expiry date supplied by the customer.</p><!-- /wp:paragraph --><!-- wp:paragraph --><p>Booking information is accessible to authorized staff and service providers required to operate the website and deliver customer communications. Customers may contact DriveFlex Rentals to request access to or correction of their personal information.</p><!-- /wp:paragraph -->',
 			),
 		);
 		foreach ( $pages as $slug => $page ) {
@@ -317,6 +319,8 @@ final class DriveFlex_Plugin {
 		$organization_booking = rest_sanitize_boolean( $request['organization_booking'] );
 		$organization_name = $organization_booking ? sanitize_text_field( (string) $request['organization_name'] ) : '';
 		$discount_code = strtoupper( sanitize_text_field( (string) $request['discount_code'] ) );
+		$license_number = strtoupper( sanitize_text_field( (string) $request['license_number'] ) );
+		$license_expiry = '';
 		$license_confirmed = rest_sanitize_boolean( $request['license_confirmed'] );
 		$terms_accepted = rest_sanitize_boolean( $request['terms'] );
 		if ( ! $name || ! $phone || ! is_email( $email ) || ! $notes || ! $pickup_location || ! $dropoff_location || ! $intended_area || ! $terms_accepted ) {
@@ -327,6 +331,24 @@ final class DriveFlex_Plugin {
 		}
 		if ( 'self_drive' === $trip['service_type'] && ! $license_confirmed ) {
 			return new WP_Error( 'license_confirmation_required', __( 'Confirm that the self-drive customer has held a valid driver’s licence for at least three years.', 'driveflex-booking' ), array( 'status' => 400 ) );
+		}
+		if ( 'self_drive' === $trip['service_type'] ) {
+			$expiry_day = absint( $request['license_expiry_day'] );
+			$expiry_month = absint( $request['license_expiry_month'] );
+			$expiry_year = absint( $request['license_expiry_year'] );
+			if ( ! preg_match( '/^[A-Z0-9][A-Z0-9\/-]{2,99}$/', $license_number ) ) {
+				return new WP_Error( 'invalid_license_number', __( 'Enter a valid driver’s licence number.', 'driveflex-booking' ), array( 'status' => 400 ) );
+			}
+			if ( ! checkdate( $expiry_month, $expiry_day, $expiry_year ) ) {
+				return new WP_Error( 'invalid_license_expiry', __( 'Choose a valid driver’s licence expiry date.', 'driveflex-booking' ), array( 'status' => 400 ) );
+			}
+			$expiry = new DateTimeImmutable( sprintf( '%04d-%02d-%02d', $expiry_year, $expiry_month, $expiry_day ), wp_timezone() );
+			if ( $expiry < $trip['dropoff']->setTime( 0, 0 ) ) {
+				return new WP_Error( 'expired_license', __( 'The driver’s licence must remain valid through the rental return date.', 'driveflex-booking' ), array( 'status' => 400 ) );
+			}
+			$license_expiry = $expiry->format( 'Y-m-d' );
+		} else {
+			$license_number = '';
 		}
 		if ( $this->has_overlap( $trip['vehicle']['id'], $trip['pickup'], $trip['dropoff'] ) ) {
 			return new WP_Error( 'dates_unavailable', sprintf( __( 'These dates are no longer available. Choose different dates or contact %s.', 'driveflex-booking' ), $this->company_name() ), array( 'status' => 409 ) );
@@ -341,7 +363,8 @@ final class DriveFlex_Plugin {
 			$wpdb->prefix . 'driveflex_bookings',
 			array(
 				'reference' => $reference, 'vehicle_id' => $trip['vehicle']['id'], 'customer_name' => $name,
-				'phone' => $phone, 'email' => $email, 'service_type' => $trip['service_type'], 'intended_area' => $intended_area,
+				'phone' => $phone, 'email' => $email, 'service_type' => $trip['service_type'], 'license_number' => $license_number,
+				'license_expiry' => $license_expiry, 'intended_area' => $intended_area,
 				'organization_name' => $organization_name, 'discount_code' => $discount_code, 'license_confirmed' => (int) $license_confirmed,
 				'terms_accepted' => (int) $terms_accepted, 'pickup_at' => $trip['pickup']->format( 'Y-m-d H:i:s' ),
 				'dropoff_at' => $trip['dropoff']->format( 'Y-m-d H:i:s' ), 'pickup_location' => $pickup_location,
@@ -349,18 +372,18 @@ final class DriveFlex_Plugin {
 				'days' => $trip['days'], 'discount' => $trip['discount'], 'estimated_total' => $trip['total'],
 				'status' => 'requested', 'created_at' => $now, 'updated_at' => $now,
 			),
-			array( '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%f', '%d', '%f', '%f', '%s', '%s', '%s' )
+			array( '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%f', '%d', '%f', '%f', '%s', '%s', '%s' )
 		);
 		if ( false === $inserted ) {
 			return new WP_Error( 'save_failed', __( 'The request could not be saved. Please try again.', 'driveflex-booking' ), array( 'status' => 500 ) );
 		}
 		try {
-			$this->send_notifications( $reference, $trip, compact( 'name', 'phone', 'email', 'notes', 'pickup_location', 'dropoff_location', 'intended_area', 'organization_name', 'discount_code' ) );
+			$this->send_notifications( $reference, $trip, compact( 'name', 'phone', 'email', 'notes', 'pickup_location', 'dropoff_location', 'intended_area', 'organization_name', 'discount_code', 'license_number', 'license_expiry' ) );
 		} catch ( Throwable $error ) {
 			// A mail transport failure must not discard a booking already saved in WordPress.
 			error_log( 'DriveFlex notification error for ' . $reference . ': ' . $error->getMessage() );
 		}
-		$message = $this->booking_message( $reference, $trip, compact( 'name', 'phone', 'email', 'notes', 'pickup_location', 'dropoff_location', 'intended_area', 'organization_name', 'discount_code' ) );
+		$message = $this->booking_message( $reference, $trip, compact( 'name', 'phone', 'email', 'notes', 'pickup_location', 'dropoff_location', 'intended_area', 'organization_name', 'discount_code', 'license_number', 'license_expiry' ) );
 		$whatsapp = preg_replace( '/\D+/', '', (string) get_option( 'driveflex_whatsapp', '' ) );
 		$url = 'https://wa.me/' . $whatsapp . '?text=' . rawurlencode( $message );
 		return new WP_REST_Response( array( 'reference' => $reference, 'status' => 'requested', 'whatsapp_url' => $url, 'message' => sprintf( __( 'Your request has been received. %s will confirm availability.', 'driveflex-booking' ), $this->company_name() ) ), 201 );
@@ -403,6 +426,9 @@ final class DriveFlex_Plugin {
 			'Discount code: ' . ( $customer['discount_code'] ?: 'None' ),
 			'Request details: ' . $customer['notes'],
 		) );
+		if ( 'self_drive' === $trip['service_type'] ) {
+			array_splice( $lines, 5, 0, array( 'Driver’s licence: ' . $customer['license_number'], 'Licence expiry: ' . $customer['license_expiry'] ) );
+		}
 		return implode( "\n", $lines );
 	}
 
@@ -447,9 +473,10 @@ final class DriveFlex_Plugin {
 		foreach ( $rows as $row ) {
 			$action = admin_url( 'admin-post.php' );
 			$service = 'with_driver' === $row->service_type ? 'With Driver' : 'Self Drive';
+			$license = 'self_drive' === $row->service_type && $row->license_number ? '<br><small>Licence: ' . esc_html( $row->license_number ) . '<br>Expires: ' . esc_html( $row->license_expiry ) . '</small>' : '';
 			$organization = $row->organization_name ? '<br><small>Organization: ' . esc_html( $row->organization_name ) . '</small>' : '';
 			$discount = $row->discount_code ? '<br><small>Discount code: ' . esc_html( $row->discount_code ) . '</small>' : '';
-			echo '<tr><td><strong>' . esc_html( $row->reference ) . '</strong><br><small>' . esc_html( $row->created_at ) . '</small></td><td>' . esc_html( $row->customer_name ) . '<br><a href="mailto:' . esc_attr( $row->email ) . '">' . esc_html( $row->email ) . '</a><br>' . esc_html( $row->phone ) . $organization . '</td><td>' . esc_html( get_the_title( $row->vehicle_id ) ) . '<br><small>' . esc_html( $service ) . '</small></td><td>' . esc_html( $row->pickup_at ) . '<br>to ' . esc_html( $row->dropoff_at ) . '<br><small>Area: ' . esc_html( $row->intended_area ) . '</small>' . $discount . '</td><td>' . esc_html( $this->currency() . ' ' . number_format_i18n( $row->estimated_total ) ) . '</td><td>' . esc_html( ucwords( str_replace( '_', ' ', $row->status ) ) ) . '</td><td><form method="post" action="' . esc_url( $action ) . '"><input type="hidden" name="action" value="driveflex_update_booking"><input type="hidden" name="booking_id" value="' . absint( $row->id ) . '">';
+			echo '<tr><td><strong>' . esc_html( $row->reference ) . '</strong><br><small>' . esc_html( $row->created_at ) . '</small></td><td>' . esc_html( $row->customer_name ) . '<br><a href="mailto:' . esc_attr( $row->email ) . '">' . esc_html( $row->email ) . '</a><br>' . esc_html( $row->phone ) . $organization . '</td><td>' . esc_html( get_the_title( $row->vehicle_id ) ) . '<br><small>' . esc_html( $service ) . '</small>' . $license . '</td><td>' . esc_html( $row->pickup_at ) . '<br>to ' . esc_html( $row->dropoff_at ) . '<br><small>Area: ' . esc_html( $row->intended_area ) . '</small>' . $discount . '</td><td>' . esc_html( $this->currency() . ' ' . number_format_i18n( $row->estimated_total ) ) . '</td><td>' . esc_html( ucwords( str_replace( '_', ' ', $row->status ) ) ) . '</td><td><form method="post" action="' . esc_url( $action ) . '"><input type="hidden" name="action" value="driveflex_update_booking"><input type="hidden" name="booking_id" value="' . absint( $row->id ) . '">';
 			wp_nonce_field( 'driveflex_update_booking_' . $row->id );
 			echo '<select name="status">';
 			foreach ( array( 'requested', 'available', 'unavailable', 'awaiting_payment', 'confirmed', 'completed', 'cancelled' ) as $status ) {

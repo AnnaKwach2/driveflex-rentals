@@ -3,7 +3,7 @@ Contributors: designphox
 Tags: car rental, fleet, booking, kenya
 Requires at least: 6.4
 Requires PHP: 8.1
-Stable tag: 1.2.6
+Stable tag: 1.2.7
 License: GPLv2 or later
 
 Fleet management, rental estimates, availability and booking requests for websites built with the DriveFlex car-hire theme.
@@ -22,7 +22,7 @@ Customer requests begin with the Requested status. Staff can mark a request Avai
 
 == Privacy and operations ==
 
-Booking requests contain customer contact and trip information. Use HTTPS, restrict WordPress administrator accounts, configure a retention policy, and send mail through an authenticated transactional email provider. The plugin does not collect card details or ID/passport numbers.
+Booking requests contain customer contact and trip information. Self-drive requests also collect a driver’s licence number and expiry date. Use HTTPS, restrict WordPress administrator accounts, configure a retention policy, and send mail through an authenticated transactional email provider. The plugin does not collect card details or ID/passport numbers.
 
 == Payment integration ==
 
