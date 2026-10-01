@@ -4,7 +4,7 @@
 
 ## Files
 
-- `UPLOAD-AS-THEME-driveflex-elementor-1.0.6.zip` (same theme archive as `driveflex-elementor-theme-1.0.6.zip`): install under **Appearance > Themes > Add New**.
+- `UPLOAD-AS-THEME-driveflex-elementor-1.0.7.zip` (same theme archive as `driveflex-elementor-theme-1.0.7.zip`): install under **Appearance > Themes > Add New**.
 - `../wordpress-plugin/designphox-driveflex-booking-1.2.7.zip`: install under **Plugins > Add New**.
 
 ## Installation order
@@ -17,7 +17,7 @@
 6. Open **Appearance > Customize > DriveFlex business details** for contact details, all five social links and the shared social-icon size control.
 7. Open a page and select **Edit with Elementor**. Once Elementor content is saved, that content replaces the theme's fallback page design.
 
-Theme version 1.0.6 automatically adds editable Elementor layouts to blank Home, Fleet and Contact pages. Existing Elementor pages containing widgets are preserved. Other WordPress pages with content are converted to an Elementor Text Editor widget once, so their content remains editable. The Fleet page uses `[driveflex_fleet]`; vehicles, rates and booking rules continue to be edited in the DriveFlex plugin.
+Theme version 1.0.7 adds independently selectable Elementor sections to the Home and Contact pages. Existing Elementor pages containing other widgets are preserved. Other WordPress pages with content are converted to an Elementor Text Editor widget once. The Fleet page uses `[driveflex_fleet]`; vehicles, rates and booking rules continue to be edited in the DriveFlex plugin rather than Elementor.
 
 ## Elementor settings
 

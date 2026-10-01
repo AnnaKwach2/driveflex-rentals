@@ -4,7 +4,7 @@ Theme URI: https://www.designphox.com
 Author: DesignPhox
 Author URI: https://www.designphox.com
 Description: Lightweight Elementor-ready WordPress theme for DriveFlex car-hire websites.
-Version: 1.0.6
+Version: 1.0.7
 Requires at least: 6.4
 Requires PHP: 8.1
 Text Domain: driveflex-elementor
@@ -29,4 +29,4 @@ Text Domain: driveflex-elementor
 @media(max-width:640px){.df-footer .df-brand{font-size:34px}.df-social{gap:20px}}
 @media(prefers-reduced-motion:reduce){.df-footer-grid>div:nth-child(n+2),.df-footer-grid>div:nth-child(n+2) a,.df-social a{transition:none}.df-footer-grid>div:nth-child(n+2):hover,.df-footer-grid>div:nth-child(n+2) a:hover,.df-social a:hover{transform:none}}
 /* Elementor-native DriveFlex page widgets */
-.elementor-widget-driveflex-home-layout>.elementor-widget-container,.elementor-widget-driveflex-contact-layout>.elementor-widget-container{width:100%}.elementor-widget-driveflex-home-layout .df-hero{background-position:center 55%;background-size:cover}.elementor-editor-active .df-reveal{opacity:1;transform:none}
+.elementor-widget-driveflex-home-layout>.elementor-widget-container,.elementor-widget-driveflex-contact-layout>.elementor-widget-container,.elementor-widget[class*="elementor-widget-driveflex-"]>.elementor-widget-container{width:100%}.elementor-widget-driveflex-home-layout .df-hero,.elementor-widget-driveflex-hero .df-hero{background-position:center 55%;background-size:cover}.elementor-editor-active .df-reveal{opacity:1;transform:none}

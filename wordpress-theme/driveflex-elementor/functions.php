@@ -30,8 +30,12 @@ add_action( 'elementor/theme/register_locations', 'driveflex_register_elementor_
 
 function driveflex_register_elementor_widgets( $widgets_manager ): void {
 	require_once get_theme_file_path( 'includes/elementor-widgets.php' );
+	require_once get_theme_file_path( 'includes/elementor-sections.php' );
 	$widgets_manager->register( new DriveFlex_Home_Elementor_Widget() );
 	$widgets_manager->register( new DriveFlex_Contact_Elementor_Widget() );
+	foreach ( array( 'hero', 'categories', 'offers', 'deals', 'steps', 'benefits', 'contact-hero', 'contact-main', 'contact-faq' ) as $section ) {
+		$widgets_manager->register( new DriveFlex_Elementor_Section( $section ) );
+	}
 }
 add_action( 'elementor/widgets/register', 'driveflex_register_elementor_widgets' );
 
@@ -116,10 +120,16 @@ function driveflex_seed_elementor_pages(): void {
 	if ( ! did_action( 'elementor/loaded' ) || ! current_user_can( 'edit_pages' ) ) {
 		return;
 	}
-	$layouts = array( 'home' => 'driveflex-home-layout', 'contact' => 'driveflex-contact-layout', 'fleet' => 'shortcode' );
-	foreach ( $layouts as $slug => $widget_type ) {
+	$layouts = array(
+		'home' => array( 'driveflex-hero', 'driveflex-categories', 'driveflex-offers', 'driveflex-deals', 'driveflex-steps', 'driveflex-benefits' ),
+		'contact' => array( 'driveflex-contact-hero', 'driveflex-contact-main', 'driveflex-contact-faq' ),
+		'fleet' => array( 'shortcode' ),
+	);
+	foreach ( $layouts as $slug => $widget_types ) {
 		$page = get_page_by_path( $slug, OBJECT, 'page' );
-		if ( ! $page || get_post_meta( $page->ID, '_driveflex_elementor_seeded', true ) ) {
+		$seeded = $page ? (string) get_post_meta( $page->ID, '_driveflex_elementor_seeded', true ) : '';
+		$section_upgrade = $page && '1.0.6' === $seeded && in_array( $slug, array( 'home', 'contact' ), true );
+		if ( ! $page || ( $seeded && ! $section_upgrade ) ) {
 			continue;
 		}
 		$existing = json_decode( (string) get_post_meta( $page->ID, '_elementor_data', true ), true );
@@ -131,18 +141,15 @@ function driveflex_seed_elementor_pages(): void {
 			}
 		};
 		if ( is_array( $existing ) ) { $walk( $existing ); }
-		if ( $has_widget ) {
+		if ( $has_widget && ! $section_upgrade ) {
 			update_post_meta( $page->ID, '_driveflex_elementor_seeded', 'preserved-existing-content' );
 			continue;
 		}
-		$widget_settings = 'shortcode' === $widget_type ? array( 'shortcode' => '[driveflex_fleet]' ) : array();
-		$data = array( array(
-			'id' => substr( md5( 'driveflex-container-' . $slug ), 0, 7 ),
-			'elType' => 'container',
-			'settings' => array( 'content_width' => 'full', 'padding' => array( 'unit' => 'px', 'top' => '0', 'right' => '0', 'bottom' => '0', 'left' => '0', 'isLinked' => true ), 'gap' => array( 'unit' => 'px', 'size' => 0 ) ),
-			'elements' => array( array( 'id' => substr( md5( 'driveflex-widget-' . $slug ), 0, 7 ), 'elType' => 'widget', 'widgetType' => $widget_type, 'settings' => $widget_settings, 'elements' => array() ) ),
-			'isInner' => false,
-		) );
+		$data = array();
+		foreach ( $widget_types as $position => $widget_type ) {
+			$widget_settings = 'shortcode' === $widget_type ? array( 'shortcode' => '[driveflex_fleet]' ) : array();
+			$data[] = array( 'id' => substr( md5( 'driveflex-container-' . $slug . $position ), 0, 7 ), 'elType' => 'container', 'settings' => array( 'content_width' => 'full', 'padding' => array( 'unit' => 'px', 'top' => '0', 'right' => '0', 'bottom' => '0', 'left' => '0', 'isLinked' => true ), 'gap' => array( 'unit' => 'px', 'size' => 0 ) ), 'elements' => array( array( 'id' => substr( md5( 'driveflex-widget-' . $slug . $position ), 0, 7 ), 'elType' => 'widget', 'widgetType' => $widget_type, 'settings' => $widget_settings, 'elements' => array() ) ), 'isInner' => false );
+		}
 		update_post_meta( $page->ID, '_elementor_data', wp_slash( wp_json_encode( $data ) ) );
 		update_post_meta( $page->ID, '_elementor_edit_mode', 'builder' );
 		update_post_meta( $page->ID, '_elementor_template_type', 'wp-page' );
@@ -172,7 +179,7 @@ function driveflex_seed_elementor_pages(): void {
 		delete_post_meta( $page->ID, '_elementor_css' );
 	}
 }
-define( 'DRIVEFLEX_ELEMENTOR_CONTENT_VERSION', '1.0.6' );
+define( 'DRIVEFLEX_ELEMENTOR_CONTENT_VERSION', '1.0.7' );
 add_action( 'admin_init', 'driveflex_seed_elementor_pages', 40 );
 
 /** Upgrade the untouched starter menu created by earlier theme packages. */
