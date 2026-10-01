@@ -28,6 +28,13 @@ function driveflex_register_elementor_locations( $manager ): void {
 }
 add_action( 'elementor/theme/register_locations', 'driveflex_register_elementor_locations' );
 
+function driveflex_register_elementor_widgets( $widgets_manager ): void {
+	require_once get_theme_file_path( 'includes/elementor-widgets.php' );
+	$widgets_manager->register( new DriveFlex_Home_Elementor_Widget() );
+	$widgets_manager->register( new DriveFlex_Contact_Elementor_Widget() );
+}
+add_action( 'elementor/widgets/register', 'driveflex_register_elementor_widgets' );
+
 function driveflex_elementor_page(): bool {
 	return did_action( 'elementor/loaded' ) && is_singular() && class_exists( '\\Elementor\\Plugin' ) && \Elementor\Plugin::$instance->db->is_built_with_elementor( get_the_ID() );
 }
@@ -103,6 +110,70 @@ function driveflex_create_starter_pages(): void {
 	}
 }
 add_action( 'after_switch_theme', 'driveflex_create_starter_pages' );
+
+/** Add editable Elementor layouts only when a page has no existing Elementor widgets. */
+function driveflex_seed_elementor_pages(): void {
+	if ( ! did_action( 'elementor/loaded' ) || ! current_user_can( 'edit_pages' ) ) {
+		return;
+	}
+	$layouts = array( 'home' => 'driveflex-home-layout', 'contact' => 'driveflex-contact-layout', 'fleet' => 'shortcode' );
+	foreach ( $layouts as $slug => $widget_type ) {
+		$page = get_page_by_path( $slug, OBJECT, 'page' );
+		if ( ! $page || get_post_meta( $page->ID, '_driveflex_elementor_seeded', true ) ) {
+			continue;
+		}
+		$existing = json_decode( (string) get_post_meta( $page->ID, '_elementor_data', true ), true );
+		$has_widget = false;
+		$walk = static function ( array $elements ) use ( &$walk, &$has_widget ): void {
+			foreach ( $elements as $element ) {
+				if ( 'widget' === ( $element['elType'] ?? '' ) ) { $has_widget = true; return; }
+				if ( ! empty( $element['elements'] ) && is_array( $element['elements'] ) ) { $walk( $element['elements'] ); }
+			}
+		};
+		if ( is_array( $existing ) ) { $walk( $existing ); }
+		if ( $has_widget ) {
+			update_post_meta( $page->ID, '_driveflex_elementor_seeded', 'preserved-existing-content' );
+			continue;
+		}
+		$widget_settings = 'shortcode' === $widget_type ? array( 'shortcode' => '[driveflex_fleet]' ) : array();
+		$data = array( array(
+			'id' => substr( md5( 'driveflex-container-' . $slug ), 0, 7 ),
+			'elType' => 'container',
+			'settings' => array( 'content_width' => 'full', 'padding' => array( 'unit' => 'px', 'top' => '0', 'right' => '0', 'bottom' => '0', 'left' => '0', 'isLinked' => true ), 'gap' => array( 'unit' => 'px', 'size' => 0 ) ),
+			'elements' => array( array( 'id' => substr( md5( 'driveflex-widget-' . $slug ), 0, 7 ), 'elType' => 'widget', 'widgetType' => $widget_type, 'settings' => $widget_settings, 'elements' => array() ) ),
+			'isInner' => false,
+		) );
+		update_post_meta( $page->ID, '_elementor_data', wp_slash( wp_json_encode( $data ) ) );
+		update_post_meta( $page->ID, '_elementor_edit_mode', 'builder' );
+		update_post_meta( $page->ID, '_elementor_template_type', 'wp-page' );
+		update_post_meta( $page->ID, '_wp_page_template', 'templates/elementor-full-width.php' );
+		update_post_meta( $page->ID, '_driveflex_elementor_seeded', DRIVEFLEX_ELEMENTOR_CONTENT_VERSION );
+		delete_post_meta( $page->ID, '_elementor_css' );
+	}
+	foreach ( get_pages() as $page ) {
+		if ( isset( $layouts[ $page->post_name ] ) || get_post_meta( $page->ID, '_driveflex_elementor_seeded', true ) || '' === trim( $page->post_content ) ) {
+			continue;
+		}
+		$existing = json_decode( (string) get_post_meta( $page->ID, '_elementor_data', true ), true );
+		if ( is_array( $existing ) && ! empty( $existing ) ) {
+			continue;
+		}
+		$content = do_blocks( $page->post_content );
+		$data = array( array(
+			'id' => substr( md5( 'driveflex-container-' . $page->ID ), 0, 7 ), 'elType' => 'container',
+			'settings' => array( 'content_width' => 'boxed', 'boxed_width' => array( 'unit' => 'px', 'size' => 900 ), 'padding' => array( 'unit' => 'px', 'top' => '60', 'right' => '20', 'bottom' => '60', 'left' => '20', 'isLinked' => false ) ),
+			'elements' => array( array( 'id' => substr( md5( 'driveflex-widget-' . $page->ID ), 0, 7 ), 'elType' => 'widget', 'widgetType' => 'text-editor', 'settings' => array( 'editor' => $content ), 'elements' => array() ) ), 'isInner' => false,
+		) );
+		update_post_meta( $page->ID, '_elementor_data', wp_slash( wp_json_encode( $data ) ) );
+		update_post_meta( $page->ID, '_elementor_edit_mode', 'builder' );
+		update_post_meta( $page->ID, '_elementor_template_type', 'wp-page' );
+		update_post_meta( $page->ID, '_wp_page_template', 'templates/elementor-full-width.php' );
+		update_post_meta( $page->ID, '_driveflex_elementor_seeded', DRIVEFLEX_ELEMENTOR_CONTENT_VERSION );
+		delete_post_meta( $page->ID, '_elementor_css' );
+	}
+}
+define( 'DRIVEFLEX_ELEMENTOR_CONTENT_VERSION', '1.0.6' );
+add_action( 'admin_init', 'driveflex_seed_elementor_pages', 40 );
 
 /** Upgrade the untouched starter menu created by earlier theme packages. */
 function driveflex_upgrade_starter_menu(): void {

@@ -32,6 +32,7 @@
     }
     error.textContent = '';
     const text = `Hello DriveFlex Rentals,\n\n${fields.message}\n\nName: ${fields.firstName} ${fields.lastName}\nPhone: ${fields.phone}\nEmail: ${fields.email}`;
-    window.open(`https://wa.me/254706449960?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+    const whatsapp = event.currentTarget.dataset.whatsapp || 'https://wa.me/254706449960';
+    window.open(`${whatsapp}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
   });
 })();

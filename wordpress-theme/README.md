@@ -4,7 +4,7 @@
 
 ## Files
 
-- `UPLOAD-AS-THEME-driveflex-elementor-1.0.5.zip` (same theme archive as `driveflex-elementor-theme-1.0.5.zip`): install under **Appearance > Themes > Add New**.
+- `UPLOAD-AS-THEME-driveflex-elementor-1.0.6.zip` (same theme archive as `driveflex-elementor-theme-1.0.6.zip`): install under **Appearance > Themes > Add New**.
 - `../wordpress-plugin/designphox-driveflex-booking-1.2.7.zip`: install under **Plugins > Add New**.
 
 ## Installation order
@@ -16,6 +16,8 @@
 5. Open **Vehicles > Settings**, enter the company information, then select **Import or update starter fleet**.
 6. Open **Appearance > Customize > DriveFlex business details** for contact details, all five social links and the shared social-icon size control.
 7. Open a page and select **Edit with Elementor**. Once Elementor content is saved, that content replaces the theme's fallback page design.
+
+Theme version 1.0.6 automatically adds editable Elementor layouts to blank Home, Fleet and Contact pages. Existing Elementor pages containing widgets are preserved. Other WordPress pages with content are converted to an Elementor Text Editor widget once, so their content remains editable. The Fleet page uses `[driveflex_fleet]`; vehicles, rates and booking rules continue to be edited in the DriveFlex plugin.
 
 ## Elementor settings
 
@@ -30,6 +32,8 @@
 The theme uses WordPress `title-tag` support and does not hard-code descriptions, canonical URLs or schema. Rank Math can therefore manage page titles, meta descriptions, Open Graph images, canonicals and schema without duplicates. Rank Math breadcrumb support is registered.
 
 After importing, run Rank Math's setup wizard, set the organization/logo, connect Search Console if desired, configure Local Business schema and edit each page's SEO title and description.
+
+The theme outputs no hard-coded SEO description, canonical tag or schema. Rank Math can therefore manage the SEO title, meta description, canonical URL, Open Graph/WhatsApp image and schema for every Elementor page without duplicate tags. Elementor's visible H1 remains page content and can be edited independently from the Rank Math SEO title.
 
 ## Recommended plugin roles
 
