@@ -33,8 +33,8 @@ function driveflex_register_elementor_widgets( $widgets_manager ): void {
 	require_once get_theme_file_path( 'includes/elementor-sections.php' );
 	$widgets_manager->register( new DriveFlex_Home_Elementor_Widget() );
 	$widgets_manager->register( new DriveFlex_Contact_Elementor_Widget() );
-	foreach ( array( 'hero', 'categories', 'offers', 'deals', 'steps', 'benefits', 'contact-hero', 'contact-main', 'contact-faq' ) as $section ) {
-		$widgets_manager->register( new DriveFlex_Elementor_Section( $section ) );
+	foreach ( array( 'DriveFlex_Hero_Section', 'DriveFlex_Categories_Section', 'DriveFlex_Offers_Section', 'DriveFlex_Deals_Section', 'DriveFlex_Steps_Section', 'DriveFlex_Benefits_Section', 'DriveFlex_Contact_Hero_Section', 'DriveFlex_Contact_Main_Section', 'DriveFlex_Contact_Faq_Section' ) as $widget_class ) {
+		$widgets_manager->register( new $widget_class() );
 	}
 }
 add_action( 'elementor/widgets/register', 'driveflex_register_elementor_widgets' );

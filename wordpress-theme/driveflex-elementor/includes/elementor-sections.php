@@ -4,11 +4,11 @@ use Elementor\Widget_Base;
 
 defined( 'ABSPATH' ) || exit;
 
-final class DriveFlex_Elementor_Section extends Widget_Base {
-	private string $section;
-	public function __construct( string $section, array $data = array(), ?array $args = null ) { $this->section = $section; parent::__construct( $data, $args ); }
-	public function get_name(): string { return 'driveflex-' . $this->section; }
-	public function get_title(): string { return 'DriveFlex ' . ucwords( str_replace( '-', ' ', $this->section ) ); }
+abstract class DriveFlex_Elementor_Section extends Widget_Base {
+	protected const SECTION = '';
+	private function section(): string { return static::SECTION; }
+	public function get_name(): string { return 'driveflex-' . $this->section(); }
+	public function get_title(): string { return 'DriveFlex ' . ucwords( str_replace( '-', ' ', $this->section() ) ); }
 	public function get_icon(): string { return 'eicon-section'; }
 	public function get_categories(): array { return array( 'general' ); }
 	public function get_style_depends(): array { return array( 'driveflex-theme' ); }
@@ -18,7 +18,7 @@ final class DriveFlex_Elementor_Section extends Widget_Base {
 
 	protected function register_controls(): void {
 		$this->start_controls_section( 'content', array( 'label' => 'Content' ) );
-		switch ( $this->section ) {
+		switch ( $this->section() ) {
 			case 'hero':
 				$this->text( 'title', 'Heading', 'Drive Your Journey,' ); $this->text( 'accent', 'Orange heading', 'Your Way.' ); $this->text( 'intro', 'Introduction', "Explore Kenya with comfort and style.\nYour perfect rental. Your next adventure.", Controls_Manager::TEXTAREA ); $this->image( 'background', 'Background image', 'driveflex-nairobi-hero.webp' ); $this->fleet_link();
 				break;
@@ -52,7 +52,7 @@ final class DriveFlex_Elementor_Section extends Widget_Base {
 
 	protected function render(): void {
 		$s = $this->get_settings_for_display(); $fleet = $s['fleet_url']['url'] ?? home_url( '/fleet/' ); $asset = static fn( string $file ): string => get_theme_file_uri( 'assets/images/' . $file );
-		switch ( $this->section ) {
+		switch ( $this->section() ) {
 			case 'hero': ?>
 				<section class="df-hero" id="locations" style="background-image:url('<?php echo esc_url( $s['background']['url'] ); ?>')"><div class="df-container df-hero-copy"><h1><?php echo esc_html( $s['title'] ); ?><br><span><?php echo esc_html( $s['accent'] ); ?></span></h1><p><?php echo nl2br( esc_html( $s['intro'] ) ); ?></p><div class="df-perks"><div class="df-perk"><b>◇</b><span><strong>Clear Daily Rates</strong><small>Prices in Kenyan shillings</small></span></div><div class="df-perk"><b>♧</b><span><strong>Flexible Rentals</strong><small>For your kind of journey</small></span></div><div class="df-perk"><b>◷</b><span><strong>Easy Trip Planning</strong><small>Find your perfect ride</small></span></div></div></div><div class="df-search-panel"><div class="df-search-tabs"><button type="button" class="is-active">♧ Rent a Car</button><button type="button">↗ One Way</button><button type="button">▦ Long Term</button></div><form class="df-search" action="<?php echo esc_url( $fleet ); ?>"><label>Pick-up Location<select name="location"><option>Nairobi City Centre</option><option>Jomo Kenyatta Airport</option><option>Wilson Airport</option><option>Mombasa</option></select></label><label>Pick-up Date<input type="date" name="pickup" required></label><label>Pick-up Time<input type="time" name="pickup_time" value="10:00"></label><label>Drop-off Date<input type="date" name="dropoff" required></label><label>Drop-off Time<input type="time" name="dropoff_time" value="10:00"></label><button class="df-button" type="submit">Search Cars</button></form></div></section><?php break;
 			case 'categories': ?>
@@ -74,3 +74,13 @@ final class DriveFlex_Elementor_Section extends Widget_Base {
 		}
 	}
 }
+
+final class DriveFlex_Hero_Section extends DriveFlex_Elementor_Section { protected const SECTION = 'hero'; }
+final class DriveFlex_Categories_Section extends DriveFlex_Elementor_Section { protected const SECTION = 'categories'; }
+final class DriveFlex_Offers_Section extends DriveFlex_Elementor_Section { protected const SECTION = 'offers'; }
+final class DriveFlex_Deals_Section extends DriveFlex_Elementor_Section { protected const SECTION = 'deals'; }
+final class DriveFlex_Steps_Section extends DriveFlex_Elementor_Section { protected const SECTION = 'steps'; }
+final class DriveFlex_Benefits_Section extends DriveFlex_Elementor_Section { protected const SECTION = 'benefits'; }
+final class DriveFlex_Contact_Hero_Section extends DriveFlex_Elementor_Section { protected const SECTION = 'contact-hero'; }
+final class DriveFlex_Contact_Main_Section extends DriveFlex_Elementor_Section { protected const SECTION = 'contact-main'; }
+final class DriveFlex_Contact_Faq_Section extends DriveFlex_Elementor_Section { protected const SECTION = 'contact-faq'; }
