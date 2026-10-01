@@ -21,10 +21,10 @@ This folder contains the DesignPhox plugin for WordPress websites created from t
 ## Installation
 
 1. In WordPress, open **Plugins > Add New > Upload Plugin**.
-2. Upload `designphox-driveflex-booking-1.2.7.zip`, install and activate it.
+2. Upload `designphox-driveflex-booking-1.2.8.zip`, install and activate it.
 3. Open **DriveFlex Vehicles > Settings** and set the booking email and WhatsApp number.
 4. Select **Import or update starter fleet**, then edit the vehicles for the client.
-5. Add `[driveflex_fleet]` to the Fleet page.
+5. In Elementor, drag **DriveFlex Fleet** onto the Fleet page. The shortcode `[driveflex_fleet]` remains available for the block editor.
 
 Use an SMTP or transactional email plugin on production WordPress so booking messages are authenticated and reliably delivered.
 

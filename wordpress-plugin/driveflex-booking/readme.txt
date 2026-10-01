@@ -3,7 +3,7 @@ Contributors: designphox
 Tags: car rental, fleet, booking, kenya
 Requires at least: 6.4
 Requires PHP: 8.1
-Stable tag: 1.2.7
+Stable tag: 1.2.8
 License: GPLv2 or later
 
 Fleet management, rental estimates, availability and booking requests for websites built with the DriveFlex car-hire theme.
@@ -13,7 +13,7 @@ Fleet management, rental estimates, availability and booking requests for websit
 1. Upload and activate the plugin.
 2. Open DriveFlex Vehicles > Settings and add the client's company name, currency, locations, booking email and WhatsApp number.
 3. Select Import or update starter fleet to create the theme's complete base fleet.
-4. Add the shortcode [driveflex_fleet] to the fleet page.
+4. In Elementor, add the DriveFlex Fleet widget to the Fleet page. The shortcode [driveflex_fleet] remains available for other editors.
 5. Edit, add or remove vehicles under the client's Vehicles menu. The theme and booking system read this same fleet automatically.
 
 == Booking workflow ==

@@ -75,6 +75,56 @@ final class DriveFlex_Plugin {
 		add_action( 'admin_post_driveflex_import_fleet', array( $this, 'import_starter_fleet' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_shortcode( 'driveflex_fleet', array( $this, 'fleet_shortcode' ) );
+		add_action( 'elementor/widgets/register', array( $this, 'register_elementor_widget' ) );
+		add_action( 'elementor/elements/categories_registered', array( $this, 'register_elementor_category' ) );
+		add_action( 'admin_init', array( $this, 'upgrade_elementor_fleet_widget' ), 45 );
+	}
+
+	/** Register a dedicated Elementor widget so editors never need to type the shortcode. */
+	public function register_elementor_widget( $widgets_manager ): void {
+		if ( ! class_exists( '\\Elementor\\Widget_Base' ) ) {
+			return;
+		}
+		require_once DRIVEFLEX_PATH . 'includes/class-driveflex-elementor-fleet-widget.php';
+		$widgets_manager->register( new DriveFlex_Elementor_Fleet_Widget() );
+	}
+
+	public function register_elementor_category( $elements_manager ): void {
+		$elements_manager->add_category( 'driveflex', array( 'title' => __( 'DriveFlex Rentals', 'driveflex-booking' ), 'icon' => 'fa fa-car' ) );
+	}
+
+	/** Replace only the old DriveFlex shortcode widget; preserve every other Elementor section. */
+	public function upgrade_elementor_fleet_widget(): void {
+		if ( ! current_user_can( 'edit_pages' ) || '1.2.8' === get_option( 'driveflex_elementor_widget_version' ) ) {
+			return;
+		}
+		$page = get_page_by_path( 'fleet', OBJECT, 'page' );
+		if ( ! $page ) {
+			return;
+		}
+		$data = json_decode( (string) get_post_meta( $page->ID, '_elementor_data', true ), true );
+		if ( ! is_array( $data ) ) {
+			return;
+		}
+		$changed = false;
+		$replace = static function ( array &$elements ) use ( &$replace, &$changed ): void {
+			foreach ( $elements as &$element ) {
+				if ( 'widget' === ( $element['elType'] ?? '' ) && 'shortcode' === ( $element['widgetType'] ?? '' ) && '[driveflex_fleet]' === trim( (string) ( $element['settings']['shortcode'] ?? '' ) ) ) {
+					$element['widgetType'] = 'driveflex-fleet';
+					$element['settings'] = array();
+					$changed = true;
+				}
+				if ( ! empty( $element['elements'] ) && is_array( $element['elements'] ) ) {
+					$replace( $element['elements'] );
+				}
+			}
+		};
+		$replace( $data );
+		if ( $changed ) {
+			update_post_meta( $page->ID, '_elementor_data', wp_slash( wp_json_encode( $data ) ) );
+			delete_post_meta( $page->ID, '_elementor_css' );
+		}
+		update_option( 'driveflex_elementor_widget_version', '1.2.8' );
 	}
 
 	public function register_vehicle_type(): void {
@@ -527,7 +577,7 @@ final class DriveFlex_Plugin {
 		settings_fields( 'driveflex_settings' );
 		echo '<table class="form-table"><tr><th><label for="driveflex_company_name">Company name</label></th><td><input class="regular-text" id="driveflex_company_name" name="driveflex_company_name" value="' . esc_attr( $this->company_name() ) . '"></td></tr><tr><th><label for="driveflex_currency">Currency label</label></th><td><input class="regular-text" id="driveflex_currency" name="driveflex_currency" value="' . esc_attr( $this->currency() ) . '"><p class="description">Examples: KSh, USD, £.</p></td></tr><tr><th><label for="driveflex_locations">Rental locations</label></th><td><textarea class="large-text" rows="5" id="driveflex_locations" name="driveflex_locations">' . esc_textarea( implode( "\n", $this->locations() ) ) . '</textarea><p class="description">One location per line.</p></td></tr><tr><th><label for="driveflex_whatsapp">WhatsApp number</label></th><td><input class="regular-text" id="driveflex_whatsapp" name="driveflex_whatsapp" value="' . esc_attr( get_option( 'driveflex_whatsapp', '254706449960' ) ) . '"><p class="description">International format, for example 254706449960.</p></td></tr><tr><th><label for="driveflex_booking_email">Booking email</label></th><td><input class="regular-text" type="email" id="driveflex_booking_email" name="driveflex_booking_email" value="' . esc_attr( get_option( 'driveflex_booking_email', get_option( 'admin_email' ) ) ) . '"></td></tr></table>';
 		submit_button();
-		echo '</form><hr><h2>DriveFlex starter fleet</h2><p>Load the complete 19-vehicle base fleet for a new DriveFlex-theme website. You can then edit, add or remove vehicles for the client.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="driveflex_import_fleet">';
+		echo '</form><hr id="driveflex-starter-fleet"><h2>DriveFlex starter fleet</h2><p>Load the complete 19-vehicle base fleet for a new DriveFlex-theme website. You can then edit, add or remove vehicles for the client.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="driveflex_import_fleet">';
 		wp_nonce_field( 'driveflex_import_fleet' );
 		submit_button( 'Import or update starter fleet', 'secondary', 'submit', false );
 		echo '</form></div>';

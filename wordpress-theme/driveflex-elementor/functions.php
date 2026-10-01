@@ -123,7 +123,7 @@ function driveflex_seed_elementor_pages(): void {
 	$layouts = array(
 		'home' => array( 'driveflex-hero', 'driveflex-categories', 'driveflex-offers', 'driveflex-deals', 'driveflex-steps', 'driveflex-benefits' ),
 		'contact' => array( 'driveflex-contact-hero', 'driveflex-contact-main', 'driveflex-contact-faq' ),
-		'fleet' => array( 'shortcode' ),
+		'fleet' => array( 'driveflex-fleet' ),
 	);
 	foreach ( $layouts as $slug => $widget_types ) {
 		$page = get_page_by_path( $slug, OBJECT, 'page' );
@@ -147,7 +147,7 @@ function driveflex_seed_elementor_pages(): void {
 		}
 		$data = array();
 		foreach ( $widget_types as $position => $widget_type ) {
-			$widget_settings = 'shortcode' === $widget_type ? array( 'shortcode' => '[driveflex_fleet]' ) : array();
+			$widget_settings = array();
 			$data[] = array( 'id' => substr( md5( 'driveflex-container-' . $slug . $position ), 0, 7 ), 'elType' => 'container', 'settings' => array( 'content_width' => 'full', 'padding' => array( 'unit' => 'px', 'top' => '0', 'right' => '0', 'bottom' => '0', 'left' => '0', 'isLinked' => true ), 'gap' => array( 'unit' => 'px', 'size' => 0 ) ), 'elements' => array( array( 'id' => substr( md5( 'driveflex-widget-' . $slug . $position ), 0, 7 ), 'elType' => 'widget', 'widgetType' => $widget_type, 'settings' => $widget_settings, 'elements' => array() ) ), 'isInner' => false );
 		}
 		update_post_meta( $page->ID, '_elementor_data', wp_slash( wp_json_encode( $data ) ) );
